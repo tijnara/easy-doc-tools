@@ -105,8 +105,13 @@ export default function Home() {
                     {/* Side-by-Side Main Container */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-                        {/* Left Column: Document Tools Section */}
-                        <div className="lg:col-span-7 flex flex-col gap-4">
+                        {/* Calculator Section (Order 1 on mobile: appears top when stacked) */}
+                        <div className="order-1 lg:order-2 lg:col-span-5 w-full">
+                            <Calculator />
+                        </div>
+
+                        {/* Document Tools Section (Order 2 on mobile: appears below calculator when stacked) */}
+                        <div className="order-2 lg:order-1 lg:col-span-7 flex flex-col gap-4">
                             {/* Tool Navigation Tabs */}
                             <div className="grid grid-cols-3 bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1">
                                 <button
@@ -145,11 +150,6 @@ export default function Home() {
                             {activeTab === 'cleaner' && <LineDeleter />}
                             {activeTab === 'converter' && <PdfConverter />}
                             {activeTab === 'merger' && <PdfMerger />}
-                        </div>
-
-                        {/* Right Column: Calculator Section */}
-                        <div className="lg:col-span-5 w-full">
-                            <Calculator />
                         </div>
 
                     </div>

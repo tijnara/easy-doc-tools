@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { convertImagesToPdf, convertTextToPdf } from '../lib/pdfUtils';
 
 export default function PdfConverter() {
@@ -9,6 +9,35 @@ export default function PdfConverter() {
     const [textInput, setTextInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [liveCredits, setLiveCredits] = useState(null);
+    const [fetchingCredits, setFetchingCredits] = useState(true);
+
+    const redirectToILovePdf = () => {
+        window.open('https://www.ilovepdf.com', '_blank', 'noopener,noreferrer');
+    };
+
+    // Fetch live remaining credit balance directly from iLoveAPI
+    const fetchLiveCredits = useCallback(async () => {
+        setFetchingCredits(true);
+        try {
+            const res = await fetch('/api/credits');
+            const data = await res.json();
+            if (res.ok && data.remaining !== undefined) {
+                setLiveCredits(data.remaining);
+                if (data.remaining <= 0) {
+                    redirectToILovePdf();
+                }
+            }
+        } catch (err) {
+            console.error('Failed to fetch live credits:', err);
+        } finally {
+            setFetchingCredits(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchLiveCredits();
+    }, [fetchLiveCredits]);
 
     const downloadBlob = (blob, filename) => {
         const url = URL.createObjectURL(blob);
@@ -19,6 +48,11 @@ export default function PdfConverter() {
     };
 
     const handleConvert = async () => {
+        if (liveCredits !== null && liveCredits <= 0) {
+            redirectToILovePdf();
+            return;
+        }
+
         setLoading(true);
         setErrorMessage('');
 
@@ -30,7 +64,6 @@ export default function PdfConverter() {
                     return;
                 }
 
-                // Send Word/Excel file to your Puppeteer API route
                 const formData = new FormData();
                 formData.append('file', officeFile);
 
@@ -63,6 +96,8 @@ export default function PdfConverter() {
                 const pdfBytes = await convertTextToPdf(textInput);
                 downloadBlob(new Blob([pdfBytes], { type: 'application/pdf' }), 'converted-text.pdf');
             }
+
+            fetchLiveCredits();
         } catch (err) {
             console.error(err);
             setErrorMessage(`Conversion Error: ${err.message || 'Failed to process document.'}`);
@@ -72,11 +107,43 @@ export default function PdfConverter() {
 
     return (
         <div className="flex flex-col gap-4 p-5 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Convert to PDF</h2>
+            {/* Header with Live iLoveAPI Account Balance Badge */}
+            <div className="flex items-center justify-between flex-wrap gap-2">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white">Convert to PDF</h2>
+
+                <div className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-colors ${
+                    fetchingCredits
+                        ? 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-700'
+                        : liveCredits > 100
+                            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
+                            : liveCredits > 0
+                                ? 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800/60'
+                                : 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/60'
+                }`}>
+                    <span className={`w-2 h-2 rounded-full ${fetchingCredits ? 'bg-gray-400 animate-pulse' : 'bg-amber-500 animate-pulse'}`}></span>
+                    <span>
+                        {fetchingCredits
+                            ? 'Syncing Credits...'
+                            : liveCredits !== null
+                                ? liveCredits > 0
+                                    ? `⚡ ${liveCredits.toLocaleString()} Live Credits Remaining`
+                                    : '⚡ 0 Credits — Redirecting...'
+                                : 'iLoveAPI Connected'}
+                    </span>
+                </div>
+            </div>
 
             {errorMessage && (
-                <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl text-xs text-red-700 dark:text-red-400">
-                    {errorMessage}
+                <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl text-xs text-red-700 dark:text-red-400 flex items-center justify-between">
+                    <span>{errorMessage}</span>
+                    {liveCredits !== null && liveCredits <= 0 && (
+                        <button
+                            onClick={redirectToILovePdf}
+                            className="underline font-bold text-red-800 dark:text-red-300 ml-2"
+                        >
+                            Go to iLovePDF →
+                        </button>
+                    )}
                 </div>
             )}
 
@@ -180,13 +247,32 @@ export default function PdfConverter() {
                 />
             )}
 
-            <button
-                onClick={handleConvert}
-                disabled={loading}
-                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold active:scale-95 transition disabled:bg-gray-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-600 shadow-sm shadow-blue-500/20"
-            >
-                {loading ? 'Rendering Pixel-Perfect PDF...' : 'Convert & Download PDF'}
-            </button>
+            {/* Button Actions Group */}
+            <div className="flex flex-col gap-2.5">
+                <button
+                    onClick={handleConvert}
+                    disabled={loading}
+                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold active:scale-95 transition shadow-sm shadow-blue-500/20"
+                >
+                    {loading
+                        ? 'Rendering Pixel-Perfect PDF...'
+                        : liveCredits !== null && liveCredits <= 0
+                            ? '0 Credits — Go to iLovePDF →'
+                            : 'Convert & Download PDF'}
+                </button>
+
+                {/* Professional Redirect Button */}
+                <button
+                    onClick={redirectToILovePdf}
+                    type="button"
+                    className="w-full py-3 border border-gray-200 dark:border-slate-700/80 bg-gray-50 dark:bg-slate-800/50 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-300 rounded-xl font-medium text-xs flex items-center justify-center gap-2 active:scale-95 transition"
+                >
+                    <span>Visit Official Website for Converting other files to PDF</span>
+                    <svg className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                </button>
+            </div>
         </div>
     );
 }

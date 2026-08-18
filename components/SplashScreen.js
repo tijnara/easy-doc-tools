@@ -6,6 +6,7 @@ export default function SplashScreen({ onFinish }) {
     const [isAppLoaded, setIsAppLoaded] = useState(false);
     const [fadeOut, setFadeOut] = useState(false);
 
+    // 1. Listen for real browser asset and DOM load completion
     useEffect(() => {
         const handleLoad = () => setIsAppLoaded(true);
 
@@ -17,26 +18,30 @@ export default function SplashScreen({ onFinish }) {
         }
     }, []);
 
+    // 2. Smooth ~3 second live progress animation
     useEffect(() => {
         const interval = setInterval(() => {
             setProgress((prev) => {
+                if (prev >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => setFadeOut(true), 300);
+                    setTimeout(() => onFinish(), 900);
+                    return 100;
+                }
+
+                // If the browser is fully loaded, smoothly complete to 100%
                 if (isAppLoaded) {
-                    if (prev >= 100) {
-                        clearInterval(interval);
-                        setTimeout(() => setFadeOut(true), 200);
-                        setTimeout(() => onFinish(), 700);
-                        return 100;
-                    }
-                    return Math.min(100, prev + 10);
+                    return prev + 1; // Takes ~3.0 seconds total to reach 100%
                 }
 
+                // Otherwise, steadily advance up to 90% (~2.7s) and wait for browser resources
                 if (prev < 90) {
-                    return prev + 3;
+                    return prev + 1;
                 }
 
-                return prev;
+                return prev; // Hold at 90% if assets are still downloading on slow connections
             });
-        }, 30);
+        }, 30); // 30ms tick rate
 
         return () => clearInterval(interval);
     }, [isAppLoaded, onFinish]);
@@ -47,7 +52,7 @@ export default function SplashScreen({ onFinish }) {
                 fadeOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
             }`}
         >
-            {/* Custom Flight Keyframe Animations */}
+            {/* Flight & Wind Keyframe Animations */}
             <style>{`
         @keyframes origamiFly {
           0%, 100% {
@@ -90,12 +95,9 @@ export default function SplashScreen({ onFinish }) {
 
             {/* Animated Flying Container */}
             <div className="relative flex flex-col items-center justify-center mb-6">
-                {/* Background Glowing Aura */}
                 <div className="absolute w-32 h-32 bg-amber-400/20 rounded-full blur-2xl animate-pulse"></div>
 
-                {/* Flying Origami Badge */}
                 <div className="animate-flying-plane relative w-20 h-20 bg-purple-900/90 border border-purple-700/60 rounded-2xl flex items-center justify-center shadow-2xl shadow-amber-500/25 backdrop-blur-md">
-                    {/* Origami Document Transformer Icon */}
                     <svg className="w-12 h-12 drop-shadow-md" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <defs>
                             <linearGradient id="splashGoldWing" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -123,7 +125,7 @@ export default function SplashScreen({ onFinish }) {
                     </svg>
                 </div>
 
-                {/* Animated Flying Wind Streams */}
+                {/* Flying Wind Trail Effects */}
                 <div className="absolute -bottom-4 flex flex-col items-center gap-1 pointer-events-none">
                     <div className="animate-wind-trail-1 w-8 h-0.5 bg-gradient-to-r from-transparent via-amber-300 to-transparent rounded-full"></div>
                     <div className="animate-wind-trail-2 w-12 h-0.5 bg-gradient-to-r from-transparent via-purple-300 to-transparent rounded-full"></div>
@@ -138,10 +140,10 @@ export default function SplashScreen({ onFinish }) {
                 Preparing your workspace...
             </p>
 
-            {/* Progress Bar */}
+            {/* Slower Live Progress Bar */}
             <div className="w-56 h-1.5 bg-purple-900/80 border border-purple-800 rounded-full overflow-hidden relative shadow-inner">
                 <div
-                    className="h-full bg-gradient-to-r from-purple-600 via-violet-500 to-amber-400 rounded-full transition-all duration-100 ease-out"
+                    className="h-full bg-gradient-to-r from-purple-600 via-violet-500 to-amber-400 rounded-full transition-all duration-75 ease-out"
                     style={{ width: `${progress}%` }}
                 />
             </div>
@@ -151,7 +153,7 @@ export default function SplashScreen({ onFinish }) {
         {progress}%
       </span>
 
-            {/* Animated Developer Watermark Badge */}
+            {/* Developer Watermark Badge */}
             <div className="absolute bottom-8 flex items-center justify-center">
                 <div className="inline-flex items-center gap-2 bg-purple-900/60 border border-purple-700/50 backdrop-blur-md px-4 py-2 rounded-full shadow-lg">
                     <div className="relative flex items-center justify-center w-4 h-4">
