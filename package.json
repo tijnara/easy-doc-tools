@@ -1,0 +1,31 @@
+{
+  "name": "easy-doc-tools",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@ilovepdf/ilovepdf-nodejs": "^0.3.1",
+    "@supabase/supabase-js": "^2.112.3",
+    "lucide-react": "^0.378.0",
+    "mammoth": "^1.12.1",
+    "next": "^14.2.35",
+    "pdf-lib": "^1.17.1",
+    "puppeteer": "^25.8.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "@types/react": "19.2.18",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.3",
+    "typescript": "7.0.2"
+  }
+}
