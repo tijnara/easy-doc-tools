@@ -17,10 +17,40 @@ export default function Home() {
 
             <main className="min-h-screen bg-slate-50 py-10 px-4 flex flex-col justify-between relative">
                 <div className="max-w-6xl mx-auto w-full flex flex-col gap-6">
-                    {/* Header */}
-                    <div className="text-center">
-                        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Workspace Kit</h1>
-                        <p className="text-sm text-gray-500 mt-1">Essential text, document, PDF, and calculation tools</p>
+
+                    {/* Header with Integrated Origami Brand Icon */}
+                    <div className="flex flex-col items-center justify-center text-center">
+                        <div className="flex items-center gap-3 mb-1">
+                            <div className="w-10 h-10 bg-purple-950 p-1.5 rounded-xl flex items-center justify-center shadow-md shadow-purple-900/20 border border-purple-800">
+                                <svg className="w-full h-full" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <defs>
+                                        <linearGradient id="headerGoldWing" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stopColor="#ffffff" />
+                                            <stop offset="35%" stopColor="#fef08a" />
+                                            <stop offset="100%" stopColor="#eab308" />
+                                        </linearGradient>
+                                        <linearGradient id="headerVioletBody" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stopColor="#e9d5ff" />
+                                            <stop offset="100%" stopColor="#8b5cf6" />
+                                        </linearGradient>
+                                        <linearGradient id="headerLeftWing" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stopColor="#d8b4fe" />
+                                            <stop offset="40%" stopColor="#818cf8" />
+                                            <stop offset="100%" stopColor="#4f46e5" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M 16 4 L 5 22 L 13 19 Z" fill="url(#headerLeftWing)" />
+                                    <path d="M 16 4 L 27 22 L 19 19 Z" fill="url(#headerGoldWing)" />
+                                    <path d="M 16 4 L 19 19 L 16 27 L 13 19 Z" fill="url(#headerVioletBody)" />
+                                    <line x1="16" y1="4" x2="16" y2="27" stroke="#ffffff" strokeWidth="0.8" opacity="0.8" />
+                                    <line x1="16" y1="4" x2="10.5" y2="20.5" stroke="#e0e7ff" strokeWidth="0.6" opacity="0.7" />
+                                    <line x1="16" y1="4" x2="21.5" y2="20.5" stroke="#d97706" strokeWidth="0.6" opacity="0.7" />
+                                    <circle cx="16" cy="27" r="1.2" fill="#fbbf24" />
+                                </svg>
+                            </div>
+                            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Workspace Kit</h1>
+                        </div>
+                        <p className="text-sm text-gray-500">Essential text, document, PDF, and calculation tools</p>
                     </div>
 
                     {/* Side-by-Side Main Container */}
@@ -73,7 +103,6 @@ export default function Home() {
                 {/* Footer Author Badge */}
                 <footer className="mt-12 text-center text-xs text-gray-500 font-medium flex items-center justify-center">
                     <div className="inline-flex items-center gap-1.5 bg-white px-4 py-2 rounded-full border border-gray-200/80 shadow-sm hover:border-violet-300 transition-colors">
-                        {/* Animated Coding Developer Icon */}
                         <div className="relative flex items-center justify-center w-5 h-5">
                             <span className="absolute inset-0 bg-violet-400/20 rounded-full animate-ping"></span>
                             <svg

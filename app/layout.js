@@ -1,7 +1,7 @@
 import './globals.css';
 
 export const metadata = {
-    title: 'Easy Doc Tools',
+    title: 'Workspace Kit',
     description: 'Mobile-friendly text cleaner and PDF tool',
 };
 

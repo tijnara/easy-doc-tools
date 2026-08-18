@@ -47,23 +47,86 @@ export default function SplashScreen({ onFinish }) {
                 fadeOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
             }`}
         >
-            {/* Animated Glowing Aura & Logo Box */}
-            <div className="relative flex items-center justify-center mb-6">
-                <div className="absolute w-28 h-28 bg-amber-400/25 rounded-full blur-2xl animate-pulse"></div>
-                <div className="relative w-20 h-20 bg-gradient-to-tr from-purple-800 via-violet-600 to-amber-400 rounded-2xl flex items-center justify-center shadow-2xl shadow-amber-500/20 animate-bounce border border-amber-300/30">
-                    <svg
-                        className="w-10 h-10 text-amber-300"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        />
+            {/* Custom Flight Keyframe Animations */}
+            <style>{`
+        @keyframes origamiFly {
+          0%, 100% {
+            transform: translateY(0px) translateX(0px) rotate(0deg) scale(1);
+          }
+          25% {
+            transform: translateY(-12px) translateX(8px) rotate(5deg) scale(1.04);
+          }
+          50% {
+            transform: translateY(-20px) translateX(0px) rotate(-2deg) scale(1.06);
+          }
+          75% {
+            transform: translateY(-8px) translateX(-8px) rotate(-6deg) scale(1.02);
+          }
+        }
+        @keyframes windStream {
+          0% {
+            opacity: 0;
+            transform: translateY(-10px) scaleX(0.5);
+          }
+          50% {
+            opacity: 0.7;
+            transform: translateY(12px) scaleX(1.2);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(24px) scaleX(0.5);
+          }
+        }
+        .animate-flying-plane {
+          animation: origamiFly 3.5s ease-in-out infinite;
+        }
+        .animate-wind-trail-1 {
+          animation: windStream 1.8s ease-in-out infinite;
+        }
+        .animate-wind-trail-2 {
+          animation: windStream 1.8s ease-in-out infinite 0.6s;
+        }
+      `}</style>
+
+            {/* Animated Flying Container */}
+            <div className="relative flex flex-col items-center justify-center mb-6">
+                {/* Background Glowing Aura */}
+                <div className="absolute w-32 h-32 bg-amber-400/20 rounded-full blur-2xl animate-pulse"></div>
+
+                {/* Flying Origami Badge */}
+                <div className="animate-flying-plane relative w-20 h-20 bg-purple-900/90 border border-purple-700/60 rounded-2xl flex items-center justify-center shadow-2xl shadow-amber-500/25 backdrop-blur-md">
+                    {/* Origami Document Transformer Icon */}
+                    <svg className="w-12 h-12 drop-shadow-md" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="splashGoldWing" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#ffffff" />
+                                <stop offset="35%" stopColor="#fef08a" />
+                                <stop offset="100%" stopColor="#eab308" />
+                            </linearGradient>
+                            <linearGradient id="splashVioletBody" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#e9d5ff" />
+                                <stop offset="100%" stopColor="#8b5cf6" />
+                            </linearGradient>
+                            <linearGradient id="splashLeftWing" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#d8b4fe" />
+                                <stop offset="40%" stopColor="#818cf8" />
+                                <stop offset="100%" stopColor="#4f46e5" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M 16 4 L 5 22 L 13 19 Z" fill="url(#splashLeftWing)" />
+                        <path d="M 16 4 L 27 22 L 19 19 Z" fill="url(#splashGoldWing)" />
+                        <path d="M 16 4 L 19 19 L 16 27 L 13 19 Z" fill="url(#splashVioletBody)" />
+                        <line x1="16" y1="4" x2="16" y2="27" stroke="#ffffff" strokeWidth="0.8" opacity="0.8" />
+                        <line x1="16" y1="4" x2="10.5" y2="20.5" stroke="#e0e7ff" strokeWidth="0.6" opacity="0.7" />
+                        <line x1="16" y1="4" x2="21.5" y2="20.5" stroke="#d97706" strokeWidth="0.6" opacity="0.7" />
+                        <circle cx="16" cy="27" r="1.2" fill="#fbbf24" />
                     </svg>
+                </div>
+
+                {/* Animated Flying Wind Streams */}
+                <div className="absolute -bottom-4 flex flex-col items-center gap-1 pointer-events-none">
+                    <div className="animate-wind-trail-1 w-8 h-0.5 bg-gradient-to-r from-transparent via-amber-300 to-transparent rounded-full"></div>
+                    <div className="animate-wind-trail-2 w-12 h-0.5 bg-gradient-to-r from-transparent via-purple-300 to-transparent rounded-full"></div>
                 </div>
             </div>
 
