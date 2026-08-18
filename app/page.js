@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import SplashScreen from '@/components/SplashScreen';
 import LineDeleter from '@/components/LineDeleter';
 import PdfConverter from '@/components/PdfConverter';
@@ -9,13 +9,62 @@ import Calculator from '@/components/Calculator';
 export default function Home() {
     const [showSplash, setShowSplash] = useState(true);
     const [activeTab, setActiveTab] = useState('cleaner');
+    const [darkMode, setDarkMode] = useState(false);
+
+    // Initialize theme from localStorage or system preference
+    useEffect(() => {
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+            setDarkMode(true);
+            document.documentElement.classList.add('dark');
+        } else {
+            setDarkMode(false);
+            document.documentElement.classList.remove('dark');
+        }
+    }, []);
+
+    // Toggle theme state and update HTML class & localStorage
+    const toggleDarkMode = () => {
+        if (darkMode) {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+            setDarkMode(false);
+        } else {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+            setDarkMode(true);
+        }
+    };
 
     return (
-        <>
+        <div className={darkMode ? 'dark' : ''}>
             {/* Intro Splash Animation */}
             {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
 
-            <main className="min-h-screen bg-slate-50 py-10 px-4 flex flex-col justify-between relative">
+            <main className="min-h-screen bg-slate-50 dark:bg-slate-950 py-10 px-4 flex flex-col justify-between relative transition-colors duration-300">
+
+                {/* Top Floating Dark Mode Toggle */}
+                <div className="absolute top-6 right-6 z-10">
+                    <button
+                        onClick={toggleDarkMode}
+                        className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
+                        aria-label="Toggle Dark Mode"
+                    >
+                        {darkMode ? (
+                            /* Sun Icon */
+                            <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                        ) : (
+                            /* Moon Icon */
+                            <svg className="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                            </svg>
+                        )}
+                    </button>
+                </div>
+
                 <div className="max-w-6xl mx-auto w-full flex flex-col gap-6">
 
                     {/* Header with Integrated Origami Brand Icon */}
@@ -48,9 +97,9 @@ export default function Home() {
                                     <circle cx="16" cy="27" r="1.2" fill="#fbbf24" />
                                 </svg>
                             </div>
-                            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Workspace Kit</h1>
+                            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Workspace Kit</h1>
                         </div>
-                        <p className="text-sm text-gray-500">Essential text, document, PDF, and calculation tools</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Essential text, document, PDF, and calculation tools</p>
                     </div>
 
                     {/* Side-by-Side Main Container */}
@@ -59,11 +108,13 @@ export default function Home() {
                         {/* Left Column: Document Tools Section */}
                         <div className="lg:col-span-7 flex flex-col gap-4">
                             {/* Tool Navigation Tabs */}
-                            <div className="grid grid-cols-3 bg-gray-200/70 p-1.5 rounded-2xl gap-1">
+                            <div className="grid grid-cols-3 bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1">
                                 <button
                                     onClick={() => setActiveTab('cleaner')}
                                     className={`py-2.5 text-xs font-bold rounded-xl transition ${
-                                        activeTab === 'cleaner' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'
+                                        activeTab === 'cleaner'
+                                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                                     }`}
                                 >
                                     Clean Text
@@ -71,7 +122,9 @@ export default function Home() {
                                 <button
                                     onClick={() => setActiveTab('converter')}
                                     className={`py-2.5 text-xs font-bold rounded-xl transition ${
-                                        activeTab === 'converter' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'
+                                        activeTab === 'converter'
+                                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                                     }`}
                                 >
                                     Convert
@@ -79,7 +132,9 @@ export default function Home() {
                                 <button
                                     onClick={() => setActiveTab('merger')}
                                     className={`py-2.5 text-xs font-bold rounded-xl transition ${
-                                        activeTab === 'merger' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'
+                                        activeTab === 'merger'
+                                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                                     }`}
                                 >
                                     Merge
@@ -101,12 +156,12 @@ export default function Home() {
                 </div>
 
                 {/* Footer Author Badge */}
-                <footer className="mt-12 text-center text-xs text-gray-500 font-medium flex items-center justify-center">
-                    <div className="inline-flex items-center gap-1.5 bg-white px-4 py-2 rounded-full border border-gray-200/80 shadow-sm hover:border-violet-300 transition-colors">
+                <footer className="mt-12 text-center text-xs text-gray-500 dark:text-gray-400 font-medium flex items-center justify-center">
+                    <div className="inline-flex items-center gap-1.5 bg-white dark:bg-slate-900 px-4 py-2 rounded-full border border-gray-200/80 dark:border-slate-800 shadow-sm hover:border-violet-300 dark:hover:border-violet-600 transition-colors">
                         <div className="relative flex items-center justify-center w-5 h-5">
                             <span className="absolute inset-0 bg-violet-400/20 rounded-full animate-ping"></span>
                             <svg
-                                className="w-4.5 h-4.5 text-violet-600 relative z-10"
+                                className="w-4.5 h-4.5 text-violet-600 dark:text-violet-400 relative z-10"
                                 viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
@@ -123,18 +178,18 @@ export default function Home() {
                             </svg>
                         </div>
 
-                        <span className="text-gray-500">by</span>
-                        <span className="font-bold text-gray-800 tracking-wide">tijnara</span>
+                        <span className="text-gray-500 dark:text-gray-400">by</span>
+                        <span className="font-bold text-gray-800 dark:text-gray-200 tracking-wide">tijnara</span>
                     </div>
                 </footer>
 
                 {/* Corner Watermark Badge */}
                 <div className="fixed bottom-3 right-4 pointer-events-none opacity-40 hover:opacity-100 transition-opacity hidden sm:block">
-          <span className="text-[10px] font-mono tracking-widest uppercase text-gray-400 select-none">
+          <span className="text-[10px] font-mono tracking-widest uppercase text-gray-400 dark:text-gray-500 select-none">
             Author: tijnara
           </span>
                 </div>
             </main>
-        </>
+        </div>
     );
 }

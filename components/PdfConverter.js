@@ -71,24 +71,26 @@ export default function PdfConverter() {
     };
 
     return (
-        <div className="flex flex-col gap-4 p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800">Convert to PDF</h2>
+        <div className="flex flex-col gap-4 p-5 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Convert to PDF</h2>
 
             {errorMessage && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
+                <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl text-xs text-red-700 dark:text-red-400">
                     {errorMessage}
                 </div>
             )}
 
             {/* Mode Selector */}
-            <div className="grid grid-cols-3 bg-gray-100 p-1 rounded-xl gap-1">
+            <div className="grid grid-cols-3 bg-gray-100 dark:bg-slate-800/80 p-1 rounded-xl gap-1">
                 <button
                     onClick={() => {
                         setMode('office');
                         setErrorMessage('');
                     }}
                     className={`py-2 text-xs font-bold rounded-lg transition ${
-                        mode === 'office' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'
+                        mode === 'office'
+                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                     }`}
                 >
                     Word / Excel
@@ -99,7 +101,9 @@ export default function PdfConverter() {
                         setErrorMessage('');
                     }}
                     className={`py-2 text-xs font-bold rounded-lg transition ${
-                        mode === 'image' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'
+                        mode === 'image'
+                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                     }`}
                 >
                     Image
@@ -110,7 +114,9 @@ export default function PdfConverter() {
                         setErrorMessage('');
                     }}
                     className={`py-2 text-xs font-bold rounded-lg transition ${
-                        mode === 'text' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'
+                        mode === 'text'
+                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                     }`}
                 >
                     Text
@@ -120,9 +126,9 @@ export default function PdfConverter() {
             {/* Input Views */}
             {mode === 'office' && (
                 <div className="flex flex-col gap-3">
-                    <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition">
-                        <span className="text-sm font-semibold text-blue-600">Select Word or Excel Document</span>
-                        <span className="text-xs text-gray-400 mt-1">Supports .docx and .xlsx</span>
+                    <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50 transition">
+                        <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">Select Word or Excel Document</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">Supports .docx and .xlsx</span>
                         <input
                             type="file"
                             accept=".docx, .xlsx, .xls"
@@ -134,8 +140,8 @@ export default function PdfConverter() {
                         />
                     </label>
                     {officeFile && (
-                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                            <p className="text-xs font-bold text-gray-700 truncate">📄 {officeFile.name}</p>
+                        <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-xl border border-gray-100 dark:border-slate-700/60">
+                            <p className="text-xs font-bold text-gray-700 dark:text-gray-300 truncate">📄 {officeFile.name}</p>
                         </div>
                     )}
                 </div>
@@ -143,8 +149,8 @@ export default function PdfConverter() {
 
             {mode === 'image' && (
                 <div className="flex flex-col gap-3">
-                    <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition">
-                        <span className="text-sm font-semibold text-blue-600">Select Images (JPG / PNG)</span>
+                    <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50 transition">
+                        <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">Select Images (JPG / PNG)</span>
                         <input
                             type="file"
                             multiple
@@ -157,14 +163,14 @@ export default function PdfConverter() {
                         />
                     </label>
                     {images.length > 0 && (
-                        <p className="text-xs text-gray-600 font-semibold">{images.length} image(s) selected</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold">{images.length} image(s) selected</p>
                     )}
                 </div>
             )}
 
             {mode === 'text' && (
                 <textarea
-                    className="w-full h-40 p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base resize-none text-gray-800"
+                    className="w-full h-40 p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base resize-none text-gray-800 dark:text-gray-100 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-colors"
                     placeholder="Enter text to convert into a PDF document..."
                     value={textInput}
                     onChange={(e) => {
@@ -177,7 +183,7 @@ export default function PdfConverter() {
             <button
                 onClick={handleConvert}
                 disabled={loading}
-                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold active:scale-95 transition disabled:bg-gray-300"
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold active:scale-95 transition disabled:bg-gray-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-600 shadow-sm shadow-blue-500/20"
             >
                 {loading ? 'Rendering Pixel-Perfect PDF...' : 'Convert & Download PDF'}
             </button>

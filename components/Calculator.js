@@ -96,15 +96,15 @@ export default function Calculator() {
     ];
 
     return (
-        <div className="flex flex-col gap-4 p-5 bg-white rounded-2xl shadow-sm border border-gray-100 max-w-md mx-auto w-full">
-            <h2 className="text-xl font-bold text-gray-800">Basic Calculator</h2>
+        <div className="flex flex-col gap-4 p-5 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 max-w-md mx-auto w-full transition-colors duration-300">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Basic Calculator</h2>
 
             {/* Screen Display */}
-            <div className="bg-gray-50 border border-gray-100 p-4 rounded-xl flex flex-col justify-between items-end min-h-[84px]">
-                <div className="text-sm font-medium text-gray-400 overflow-x-auto max-w-full whitespace-nowrap">
+            <div className="bg-gray-50 dark:bg-slate-950 border border-gray-100 dark:border-slate-800/80 p-4 rounded-xl flex flex-col justify-between items-end min-h-[84px] transition-colors">
+                <div className="text-sm font-medium text-gray-400 dark:text-gray-500 overflow-x-auto max-w-full whitespace-nowrap">
                     {input || '0'}
                 </div>
-                <div className="text-2xl font-bold text-gray-800 overflow-x-auto max-w-full whitespace-nowrap">
+                <div className="text-2xl font-bold text-gray-800 dark:text-white overflow-x-auto max-w-full whitespace-nowrap">
                     {result !== '' ? result : ''}
                 </div>
             </div>
@@ -119,12 +119,12 @@ export default function Calculator() {
                             btn.span || ''
                         } ${
                             btn.type === 'action'
-                                ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 border border-transparent dark:border-red-900/40'
                                 : btn.type === 'operator'
-                                    ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-transparent dark:border-blue-900/40'
                                     : btn.type === 'equals'
-                                        ? 'bg-blue-600 text-white hover:bg-blue-700 font-bold'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        ? 'bg-blue-600 text-white hover:bg-blue-700 font-bold shadow-sm shadow-blue-500/20'
+                                        : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-700'
                         }`}
                     >
                         {btn.label}
@@ -133,12 +133,12 @@ export default function Calculator() {
             </div>
 
             {/* Keyboard Shortcuts Helper */}
-            <div className="mt-2 pt-3 border-t border-gray-100 text-xs text-gray-500 flex flex-col gap-1.5">
-                <p className="font-semibold text-gray-700">⌨️ Keyboard Shortcuts:</p>
-                <ul className="space-y-1 text-[11px] leading-snug text-gray-500">
-                    <li><span className="font-semibold text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">Enter</span> or <span className="font-semibold text-gray-700 bg-gray-100 px-1 py-0.5 rounded border border-gray-200">=</span> : Computes the expression</li>
-                    <li><span className="font-semibold text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">Backspace</span> : Deletes the last entered character</li>
-                    <li><span className="font-semibold text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">Esc</span> or <span className="font-semibold text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">C</span> : Clears the display screen</li>
+            <div className="mt-2 pt-3 border-t border-gray-100 dark:border-slate-800 text-xs text-gray-500 dark:text-gray-400 flex flex-col gap-1.5">
+                <p className="font-semibold text-gray-700 dark:text-gray-300">⌨️ Keyboard Shortcuts:</p>
+                <ul className="space-y-1 text-[11px] leading-snug text-gray-500 dark:text-gray-400">
+                    <li><span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">Enter</span> or <span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1 py-0.5 rounded border border-gray-200 dark:border-slate-700">=</span> : Computes the expression</li>
+                    <li><span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">Backspace</span> : Deletes the last entered character</li>
+                    <li><span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">Esc</span> or <span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">C</span> : Clears the display screen</li>
                 </ul>
             </div>
         </div>
