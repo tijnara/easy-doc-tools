@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { removeExtraSpaces } from '../lib/textUtils';
 import { supabase } from '../lib/supabase';
 
@@ -8,20 +8,14 @@ export default function LineDeleter() {
     const [feedback, setFeedback] = useState('');
     const [history, setHistory] = useState([]);
     const [showHistory, setShowHistory] = useState(false);
-    const textareaRef = useRef(null);
 
-    // Fetch last 10 history items on load
+    // Initial default dimensions
+    const INITIAL_DIMENSIONS = { width: '100%', height: 224 };
+    const [boxDimensions, setBoxDimensions] = useState(INITIAL_DIMENSIONS);
+
     useEffect(() => {
         fetchHistory();
     }, []);
-
-    // Auto-adjust textarea height dynamically when input changes
-    useEffect(() => {
-        if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = `${Math.max(176, textareaRef.current.scrollHeight)}px`;
-        }
-    }, [input]);
 
     const fetchHistory = async () => {
         const { data, error } = await supabase
@@ -35,17 +29,53 @@ export default function LineDeleter() {
         }
     };
 
+    const handleMouseDown = (e, direction) => {
+        e.preventDefault();
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const container = e.currentTarget.parentElement;
+        const startWidth = container.offsetWidth;
+        const startHeight = container.offsetHeight;
+
+        const handleMouseMove = (moveEvent) => {
+            const deltaX = moveEvent.clientX - startX;
+            const deltaY = moveEvent.clientY - startY;
+
+            let newWidth = startWidth;
+            let newHeight = startHeight;
+
+            if (direction.includes('e')) newWidth = startWidth + deltaX;
+            if (direction.includes('w')) newWidth = startWidth - deltaX;
+            if (direction.includes('s')) newHeight = startHeight + deltaY;
+            if (direction.includes('n')) newHeight = startHeight - deltaY;
+
+            newWidth = Math.max(260, newWidth);
+            newHeight = Math.max(120, newHeight);
+
+            setBoxDimensions({
+                width: `${newWidth}px`,
+                height: `${newHeight}px`,
+            });
+        };
+
+        const handleMouseUp = () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+    };
+
     const handleCleanAndCopy = async () => {
         if (!input.trim()) return;
 
         const cleanedText = removeExtraSpaces(input, 'blank-lines');
         setInput(cleanedText);
 
-        // Auto-copy to clipboard
         navigator.clipboard.writeText(cleanedText);
         showToast('Cleaned & Copied!');
 
-        // Save to Supabase database
         const { data, error } = await supabase
             .from('text_history')
             .insert([{ cleaned_text: cleanedText }])
@@ -58,6 +88,7 @@ export default function LineDeleter() {
 
     const handleClear = () => {
         setInput('');
+        setBoxDimensions(INITIAL_DIMENSIONS); // Resets box size to default on clear
         showToast('Cleared!');
     };
 
@@ -83,15 +114,32 @@ export default function LineDeleter() {
                 )}
             </div>
 
-            <textarea
-                ref={textareaRef}
-                className="w-full min-h-[176px] p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base resize-y text-gray-800 dark:text-gray-100 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all overflow-hidden"
-                placeholder="Paste messy text with extra line spaces here..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-            />
+            {/* Resizable Textarea Container */}
+            <div
+                className="relative group border rounded-xl overflow-hidden bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800 transition-all max-w-full"
+                style={{ width: boxDimensions.width, height: boxDimensions.height }}
+            >
+                <textarea
+                    className="w-full h-full p-3 focus:outline-none focus:ring-2 focus:ring-blue-500/40 text-base text-gray-800 dark:text-gray-100 bg-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-none"
+                    placeholder="Paste messy text with extra line spaces here..."
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                />
 
-            {/* Button Actions */}
+                {/* 4 Border Side Drag Handles */}
+                <div onMouseDown={(e) => handleMouseDown(e, 'n')} className="absolute top-0 left-3 right-3 h-2 cursor-n-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
+                <div onMouseDown={(e) => handleMouseDown(e, 's')} className="absolute bottom-0 left-3 right-3 h-2 cursor-s-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
+                <div onMouseDown={(e) => handleMouseDown(e, 'w')} className="absolute top-3 bottom-3 left-0 w-2 cursor-w-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
+                <div onMouseDown={(e) => handleMouseDown(e, 'e')} className="absolute top-3 bottom-3 right-0 w-2 cursor-e-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
+
+                {/* 4 Corner Drag Handles */}
+                <div onMouseDown={(e) => handleMouseDown(e, 'nw')} className="absolute top-0 left-0 w-3.5 h-3.5 cursor-nw-resize hover:bg-blue-500/40 active:bg-blue-500/60 rounded-tl transition-colors z-10" />
+                <div onMouseDown={(e) => handleMouseDown(e, 'ne')} className="absolute top-0 right-0 w-3.5 h-3.5 cursor-ne-resize hover:bg-blue-500/40 active:bg-blue-500/60 rounded-tr transition-colors z-10" />
+                <div onMouseDown={(e) => handleMouseDown(e, 'sw')} className="absolute bottom-0 left-0 w-3.5 h-3.5 cursor-sw-resize hover:bg-blue-500/40 active:bg-blue-500/60 rounded-bl transition-colors z-10" />
+                <div onMouseDown={(e) => handleMouseDown(e, 'se')} className="absolute bottom-0 right-0 w-3.5 h-3.5 cursor-se-resize hover:bg-blue-500/40 active:bg-blue-500/60 rounded-br transition-colors z-10" />
+            </div>
+
+            {/* Actions */}
             <div className="flex flex-col gap-2 sm:flex-row">
                 <button
                     onClick={handleCleanAndCopy}
