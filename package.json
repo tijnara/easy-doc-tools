@@ -11,6 +11,7 @@
   "dependencies": {
     "@ilovepdf/ilovepdf-nodejs": "^0.3.1",
     "@supabase/supabase-js": "^2.112.3",
+    "@vercel/speed-insights": "^2.0.0",
     "lucide-react": "^0.378.0",
     "mammoth": "^1.12.1",
     "next": "^14.2.35",
