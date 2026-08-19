@@ -6,6 +6,25 @@ export default function PdfMerger() {
     const [files, setFiles] = useState([]);
     const [loading, setLoading] = useState(false);
 
+    const handleFileSelect = (e) => {
+        const selectedFiles = Array.from(e.target.files);
+        setFiles((prev) => [...prev, ...selectedFiles]);
+    };
+
+    const moveFile = (index, direction) => {
+        const targetIndex = index + direction;
+        if (targetIndex < 0 || targetIndex >= files.length) return;
+
+        const updated = [...files];
+        const [movedItem] = updated.splice(index, 1);
+        updated.splice(targetIndex, 0, movedItem);
+        setFiles(updated);
+    };
+
+    const removeFile = (index) => {
+        setFiles((prev) => prev.filter((_, i) => i !== index));
+    };
+
     const handleMerge = async () => {
         if (files.length < 2) {
             alert('Please select at least 2 PDF files to combine.');
@@ -37,20 +56,67 @@ export default function PdfMerger() {
                     type="file"
                     multiple
                     accept="application/pdf"
-                    onChange={(e) => setFiles(Array.from(e.target.files))}
+                    onChange={handleFileSelect}
                     className="hidden"
                 />
             </label>
 
+            {/* Rearrangeable Lineup List */}
             {files.length > 0 && (
                 <div className="bg-gray-50 dark:bg-slate-800/60 p-3 rounded-xl border border-gray-100 dark:border-slate-700/60">
-                    <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                        Selected ({files.length}):
-                    </p>
-                    <ul className="text-xs text-gray-700 dark:text-gray-300 space-y-1 max-h-28 overflow-y-auto pr-1">
+                    <div className="flex justify-between items-center mb-2">
+                        <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Lineup Order ({files.length}):
+                        </p>
+                        <button
+                            onClick={() => setFiles([])}
+                            className="text-xs text-red-500 hover:text-red-600 font-semibold"
+                        >
+                            Clear All
+                        </button>
+                    </div>
+
+                    <ul className="text-xs space-y-2 max-h-56 overflow-y-auto pr-1">
                         {files.map((file, idx) => (
-                            <li key={idx} className="truncate">
-                                📄 {file.name}
+                            <li
+                                key={idx}
+                                className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xs"
+                            >
+                                <div className="flex items-center gap-2 truncate pr-2">
+                                    <span className="font-mono font-bold text-xs bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md border border-blue-200 dark:border-blue-900/50">
+                                        #{idx + 1}
+                                    </span>
+                                    <span className="truncate text-gray-700 dark:text-gray-300 font-medium">
+                                        📄 {file.name}
+                                    </span>
+                                </div>
+
+                                {/* Order & Delete Controls */}
+                                <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                        onClick={() => moveFile(idx, -1)}
+                                        disabled={idx === 0}
+                                        title="Move Up"
+                                        className="p-1.5 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                                    >
+                                        ▲
+                                    </button>
+                                    <button
+                                        onClick={() => moveFile(idx, 1)}
+                                        disabled={idx === files.length - 1}
+                                        title="Move Down"
+                                        className="p-1.5 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                                    >
+                                        ▼
+                                    </button>
+                                    <button
+                                        onClick={() => removeFile(idx)}
+                                        title="Remove File"
+                                        className="p-1.5 rounded-lg bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 transition ml-1"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
                             </li>
                         ))}
                     </ul>

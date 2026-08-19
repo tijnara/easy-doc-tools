@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { removeExtraSpaces } from '../lib/textUtils';
 import { supabase } from '../lib/supabase';
 
@@ -8,11 +8,20 @@ export default function LineDeleter() {
     const [feedback, setFeedback] = useState('');
     const [history, setHistory] = useState([]);
     const [showHistory, setShowHistory] = useState(false);
+    const textareaRef = useRef(null);
 
     // Fetch last 10 history items on load
     useEffect(() => {
         fetchHistory();
     }, []);
+
+    // Auto-adjust textarea height dynamically when input changes
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = `${Math.max(176, textareaRef.current.scrollHeight)}px`;
+        }
+    }, [input]);
 
     const fetchHistory = async () => {
         const { data, error } = await supabase
@@ -75,7 +84,8 @@ export default function LineDeleter() {
             </div>
 
             <textarea
-                className="w-full h-44 p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base resize-none text-gray-800 dark:text-gray-100 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-colors"
+                ref={textareaRef}
+                className="w-full min-h-[176px] p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base resize-y text-gray-800 dark:text-gray-100 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all overflow-hidden"
                 placeholder="Paste messy text with extra line spaces here..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}

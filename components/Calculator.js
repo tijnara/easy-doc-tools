@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 export default function Calculator() {
     const [input, setInput] = useState('');
     const [result, setResult] = useState('');
+    const [copied, setCopied] = useState(false);
 
     const handleClick = useCallback((value) => {
         setInput((prev) => prev + value);
@@ -36,15 +37,32 @@ export default function Calculator() {
         });
     }, []);
 
-    // Listen for physical keyboard and Numpad events
+    const handleCopyResult = () => {
+        const textToCopy = result !== '' ? result : input;
+        if (!textToCopy) return;
+        navigator.clipboard.writeText(textToCopy);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    // Keyboard listener for physical keyboard & Numpad
     useEffect(() => {
         const handleKeyDown = (e) => {
-            // Skip calculator inputs if user is currently typing inside an input/textarea elsewhere
-            if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
+            const { key, target } = e;
+
+            // If user is inside the calculator input, allow standard Enter to compute
+            if (target?.id === 'calc-input') {
+                if (key === 'Enter' || key === '=') {
+                    e.preventDefault();
+                    handleCalculate();
+                }
                 return;
             }
 
-            const { key } = e;
+            // Skip keyboard listener if user is typing in another input/textarea
+            if (['INPUT', 'TEXTAREA'].includes(target?.tagName)) {
+                return;
+            }
 
             if (/^[0-9.]$/.test(key)) {
                 handleClick(key);
@@ -97,14 +115,27 @@ export default function Calculator() {
 
     return (
         <div className="flex flex-col gap-4 p-5 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 max-w-md mx-auto w-full transition-colors duration-300">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Basic Calculator</h2>
+            <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white">Basic Calculator</h2>
+                <button
+                    onClick={handleCopyResult}
+                    className="px-3 py-1 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-lg transition"
+                >
+                    {copied ? '✓ Copied!' : '📋 Copy Result'}
+                </button>
+            </div>
 
-            {/* Screen Display */}
-            <div className="bg-gray-50 dark:bg-slate-950 border border-gray-100 dark:border-slate-800/80 p-4 rounded-xl flex flex-col justify-between items-end min-h-[84px] transition-colors">
-                <div className="text-sm font-medium text-gray-400 dark:text-gray-500 overflow-x-auto max-w-full whitespace-nowrap">
-                    {input || '0'}
-                </div>
-                <div className="text-2xl font-bold text-gray-800 dark:text-white overflow-x-auto max-w-full whitespace-nowrap">
+            {/* Interactive Screen Display (Editable & Copy/Pasteable) */}
+            <div className="bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800/80 p-3 rounded-xl flex flex-col gap-1 transition-colors">
+                <input
+                    id="calc-input"
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="0"
+                    className="w-full bg-transparent text-right text-sm font-mono text-gray-500 dark:text-gray-400 focus:outline-none placeholder:text-gray-400"
+                />
+                <div className="text-right text-2xl font-bold font-mono text-gray-800 dark:text-white truncate min-h-[32px]">
                     {result !== '' ? result : ''}
                 </div>
             </div>
@@ -137,8 +168,8 @@ export default function Calculator() {
                 <p className="font-semibold text-gray-700 dark:text-gray-300">⌨️ Keyboard Shortcuts:</p>
                 <ul className="space-y-1 text-[11px] leading-snug text-gray-500 dark:text-gray-400">
                     <li><span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">Enter</span> or <span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1 py-0.5 rounded border border-gray-200 dark:border-slate-700">=</span> : Computes the expression</li>
-                    <li><span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">Backspace</span> : Deletes the last entered character</li>
-                    <li><span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">Esc</span> or <span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">C</span> : Clears the display screen</li>
+                    <li><span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">Backspace</span> : Deletes character</li>
+                    <li><span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">Esc</span> or <span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">C</span> : Clears screen</li>
                 </ul>
             </div>
         </div>
