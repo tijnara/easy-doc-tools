@@ -1,6 +1,6 @@
 import './globals.css';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { Analytics } from '@vercel/analytics/react';
+import { Analytics } from '@vercel/analytics/next';
 
 export const viewport = {
     themeColor: '#090114',
