@@ -5,12 +5,85 @@ import { mergePdfFiles } from '../lib/pdfUtils';
 export default function PdfMerger() {
     const [files, setFiles] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [previewLoading, setPreviewLoading] = useState(false);
+    const [draggedIndex, setDraggedIndex] = useState(null);
+    const [dragOverIndex, setDragOverIndex] = useState(null);
+
+    // Merged Preview Modal State
+    const [mergedPreviewUrl, setMergedPreviewUrl] = useState(null);
 
     const handleFileSelect = (e) => {
         const selectedFiles = Array.from(e.target.files);
         setFiles((prev) => [...prev, ...selectedFiles]);
     };
 
+    // Generate merged PDF blob in memory
+    const generateMergedBlob = async () => {
+        const mergedBytes = await mergePdfFiles(files);
+        const blob = new Blob([mergedBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        return { blob, url };
+    };
+
+    // Open Merged PDF Preview Modal
+    const handlePreviewMerged = async () => {
+        if (files.length < 2) {
+            alert('Please select at least 2 PDF files to combine.');
+            return;
+        }
+        setPreviewLoading(true);
+        try {
+            if (mergedPreviewUrl) URL.revokeObjectURL(mergedPreviewUrl);
+            const { url } = await generateMergedBlob();
+            setMergedPreviewUrl(url);
+        } catch (err) {
+            alert('Error generating preview. Please check if your files are valid.');
+        }
+        setPreviewLoading(false);
+    };
+
+    const handleClosePreview = () => {
+        if (mergedPreviewUrl) URL.revokeObjectURL(mergedPreviewUrl);
+        setMergedPreviewUrl(null);
+    };
+
+    // Drag and Drop reordering handlers
+    const handleDragStart = (e, index) => {
+        setDraggedIndex(index);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e, index) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (dragOverIndex !== index) {
+            setDragOverIndex(index);
+        }
+    };
+
+    const handleDrop = (e, dropIndex) => {
+        e.preventDefault();
+        if (draggedIndex === null || draggedIndex === dropIndex) {
+            setDraggedIndex(null);
+            setDragOverIndex(null);
+            return;
+        }
+
+        const updated = [...files];
+        const [movedItem] = updated.splice(draggedIndex, 1);
+        updated.splice(dropIndex, 0, movedItem);
+
+        setFiles(updated);
+        setDraggedIndex(null);
+        setDragOverIndex(null);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedIndex(null);
+        setDragOverIndex(null);
+    };
+
+    // Directional arrow shift
     const moveFile = (index, direction) => {
         const targetIndex = index + direction;
         if (targetIndex < 0 || targetIndex >= files.length) return;
@@ -25,20 +98,19 @@ export default function PdfMerger() {
         setFiles((prev) => prev.filter((_, i) => i !== index));
     };
 
-    const handleMerge = async () => {
+    const handleMergeAndDownload = async () => {
         if (files.length < 2) {
             alert('Please select at least 2 PDF files to combine.');
             return;
         }
         setLoading(true);
         try {
-            const mergedBytes = await mergePdfFiles(files);
-            const blob = new Blob([mergedBytes], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
+            const { url } = await generateMergedBlob();
             const a = document.createElement('a');
             a.href = url;
             a.download = 'combined-document.pdf';
             a.click();
+            URL.revokeObjectURL(url);
         } catch (err) {
             alert('Error combining PDFs. Please check if your files are valid.');
         }
@@ -61,29 +133,44 @@ export default function PdfMerger() {
                 />
             </label>
 
-            {/* Rearrangeable Lineup List */}
+            {/* Drag & Drop Lineup List */}
             {files.length > 0 && (
                 <div className="bg-gray-50 dark:bg-slate-800/60 p-3 rounded-xl border border-gray-100 dark:border-slate-700/60">
                     <div className="flex justify-between items-center mb-2">
-                        <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Lineup Order ({files.length}):
+                        <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                            <span>Lineup Order ({files.length}):</span>
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500 font-normal lowercase">(drag to reorder)</span>
                         </p>
                         <button
                             onClick={() => setFiles([])}
-                            className="text-xs text-red-500 hover:text-red-600 font-semibold"
+                            className="text-xs text-red-500 hover:text-red-600 font-semibold transition"
                         >
                             Clear All
                         </button>
                     </div>
 
-                    <ul className="text-xs space-y-2 max-h-56 overflow-y-auto pr-1">
+                    <ul className="text-xs space-y-2 max-h-64 overflow-y-auto pr-1">
                         {files.map((file, idx) => (
                             <li
                                 key={idx}
-                                className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xs"
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, idx)}
+                                onDragOver={(e) => handleDragOver(e, idx)}
+                                onDrop={(e) => handleDrop(e, idx)}
+                                onDragEnd={handleDragEnd}
+                                className={`flex items-center justify-between p-2.5 rounded-xl border transition-all select-none ${
+                                    draggedIndex === idx
+                                        ? 'opacity-40 bg-blue-50 dark:bg-slate-800 border-dashed border-blue-400 scale-[0.99]'
+                                        : dragOverIndex === idx
+                                            ? 'border-2 border-blue-500 bg-blue-50/60 dark:bg-blue-950/40'
+                                            : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700/80 shadow-xs'
+                                }`}
                             >
                                 <div className="flex items-center gap-2 truncate pr-2">
-                                    <span className="font-mono font-bold text-xs bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md border border-blue-200 dark:border-blue-900/50">
+                                    <span className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 font-bold text-base cursor-grab active:cursor-grabbing">
+                                        ⋮⋮
+                                    </span>
+                                    <span className="font-mono font-bold text-xs bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md border border-blue-200 dark:border-blue-900/50 shrink-0">
                                         #{idx + 1}
                                     </span>
                                     <span className="truncate text-gray-700 dark:text-gray-300 font-medium">
@@ -91,7 +178,6 @@ export default function PdfMerger() {
                                     </span>
                                 </div>
 
-                                {/* Order & Delete Controls */}
                                 <div className="flex items-center gap-1 shrink-0">
                                     <button
                                         onClick={() => moveFile(idx, -1)}
@@ -123,13 +209,82 @@ export default function PdfMerger() {
                 </div>
             )}
 
-            <button
-                onClick={handleMerge}
-                disabled={loading || files.length < 2}
-                className="w-full py-3.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold active:scale-95 transition disabled:bg-gray-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-600 disabled:cursor-not-allowed shadow-sm shadow-green-500/20"
-            >
-                {loading ? 'Combining Files...' : 'Combine & Download PDF'}
-            </button>
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-2">
+                <button
+                    onClick={handlePreviewMerged}
+                    disabled={previewLoading || files.length < 2}
+                    type="button"
+                    className="w-full py-3 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900/50 rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                    <span>👁️</span>
+                    <span>{previewLoading ? 'Building Preview...' : 'Preview Merged PDF'}</span>
+                </button>
+
+                <button
+                    onClick={handleMergeAndDownload}
+                    disabled={loading || files.length < 2}
+                    className="w-full py-3.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold active:scale-95 transition disabled:bg-gray-300 dark:disabled:bg-slate-800 dark:disabled:text-gray-600 disabled:cursor-not-allowed shadow-sm shadow-green-500/20"
+                >
+                    {loading ? 'Combining Files...' : 'Combine & Download PDF'}
+                </button>
+            </div>
+
+            {/* Expanded Full-Screen Merged Document Preview Modal */}
+            {mergedPreviewUrl && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
+                    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 w-[96vw] h-[92vh] max-w-6xl rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+                        {/* Modal Header */}
+                        <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-950 shrink-0">
+                            <div className="flex items-center gap-2">
+                                <span className="font-mono font-bold text-xs bg-green-50 dark:bg-green-950/60 text-green-600 dark:text-green-400 px-2.5 py-1 rounded-md border border-green-200 dark:border-green-900/50">
+                                    Merged Result ({files.length} Files)
+                                </span>
+                                <h3 className="text-sm font-bold text-gray-800 dark:text-white truncate">
+                                    Full Merged Document Preview
+                                </h3>
+                            </div>
+                            <button
+                                onClick={handleClosePreview}
+                                className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg bg-gray-100 dark:bg-slate-800 transition"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Embedded PDF Viewer (#view=FitH forces auto width scaling) */}
+                        <div className="p-2 sm:p-3 bg-gray-100 dark:bg-slate-950 flex-1 w-full h-full min-h-0 overflow-hidden">
+                            <iframe
+                                src={`${mergedPreviewUrl}#view=FitH`}
+                                className="w-full h-full rounded-xl border border-gray-200 dark:border-slate-800 bg-white"
+                                title="Merged PDF Preview"
+                            />
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="px-4 py-3 border-t border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50 dark:bg-slate-950 gap-2 shrink-0">
+                            <button
+                                onClick={handleClosePreview}
+                                className="px-4 py-2 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 font-semibold text-xs rounded-xl transition"
+                            >
+                                Close
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    const a = document.createElement('a');
+                                    a.href = mergedPreviewUrl;
+                                    a.download = 'combined-document.pdf';
+                                    a.click();
+                                }}
+                                className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-xl transition shadow-sm shadow-green-500/20"
+                            >
+                                Download Combined PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
