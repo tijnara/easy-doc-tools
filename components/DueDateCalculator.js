@@ -1,11 +1,17 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function DueDateCalculator() {
     const [baseDate, setBaseDate] = useState('2026-08-01');
     const [frequency, setFrequency] = useState('weekly');
     const [installments, setInstallments] = useState(12);
     const [copied, setCopied] = useState(false);
+
+    // Live Calendar Popup State
+    const [showCalendar, setShowCalendar] = useState(false);
+    const [viewYear, setViewYear] = useState(2026);
+    const [viewMonth, setViewMonth] = useState(7); // 0-indexed: 7 = August
+    const calendarRef = useRef(null);
 
     // Payment frequency rules
     const frequencies = [
@@ -17,6 +23,61 @@ export default function DueDateCalculator() {
         { id: 'annually', label: 'Annually', days: 0, months: 12, desc: 'Every year' },
     ];
 
+    // Sync calendar month/year view whenever baseDate changes
+    useEffect(() => {
+        if (baseDate) {
+            const parsed = new Date(baseDate + 'T00:00:00');
+            if (!isNaN(parsed.getTime())) {
+                setViewYear(parsed.getFullYear());
+                setViewMonth(parsed.getMonth());
+            }
+        }
+    }, [baseDate]);
+
+    // Close calendar popover on click outside
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (calendarRef.current && !calendarRef.current.contains(e.target)) {
+                setShowCalendar(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Calendar Grid Helpers
+    const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const startDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
+
+    const handlePrevMonth = () => {
+        if (viewMonth === 0) {
+            setViewMonth(11);
+            setViewYear(viewYear - 1);
+        } else {
+            setViewMonth(viewMonth - 1);
+        }
+    };
+
+    const handleNextMonth = () => {
+        if (viewMonth === 11) {
+            setViewMonth(0);
+            setViewYear(viewYear + 1);
+        } else {
+            setViewMonth(viewMonth + 1);
+        }
+    };
+
+    const handleSelectDay = (day) => {
+        const m = String(viewMonth + 1).padStart(2, '0');
+        const d = String(day).padStart(2, '0');
+        setBaseDate(`${viewYear}-${m}-${d}`);
+        setShowCalendar(false);
+    };
+
     // Compute upcoming payment schedule for N installments
     const calculateSchedule = (startDateStr, freqId, count) => {
         if (!startDateStr || !count || count <= 0) return [];
@@ -25,6 +86,8 @@ export default function DueDateCalculator() {
 
         for (let i = 1; i <= count; i++) {
             let nextDate = new Date(startDateStr + 'T00:00:00');
+            if (isNaN(nextDate.getTime())) return [];
+
             if (freqObj.months > 0) {
                 nextDate.setMonth(nextDate.getMonth() + freqObj.months * i);
             } else {
@@ -53,6 +116,7 @@ export default function DueDateCalculator() {
     const formatDate = (dateStr) => {
         if (!dateStr) return '';
         const d = new Date(dateStr + 'T00:00:00');
+        if (isNaN(d.getTime())) return dateStr;
         return d.toLocaleDateString('en-US', {
             weekday: 'short',
             month: 'short',
@@ -86,20 +150,120 @@ export default function DueDateCalculator() {
                 </button>
             </div>
 
-            {/* Configurable Inputs: Start Date, Frequency, and Number of Installments */}
+            {/* Inputs Section */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="flex flex-col gap-1.5">
+
+                {/* Dual-Mode Initial Due Date Input with Live Calendar */}
+                <div className="flex flex-col gap-1.5 relative" ref={calendarRef}>
                     <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Initial Due Date
                     </label>
-                    <input
-                        type="date"
-                        value={baseDate}
-                        onChange={(e) => setBaseDate(e.target.value)}
-                        className="p-3 border rounded-xl text-sm font-semibold text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                    />
+                    <div className="relative flex items-center">
+                        <input
+                            type="date"
+                            value={baseDate}
+                            onChange={(e) => setBaseDate(e.target.value)}
+                            className="w-full p-3 pr-10 border rounded-xl text-sm font-semibold text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowCalendar(!showCalendar)}
+                            title="Toggle Live Visual Calendar"
+                            className="absolute right-2.5 p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-800 transition"
+                        >
+                            📅
+                        </button>
+                    </div>
+
+                    {/* Interactive Live Calendar Popover */}
+                    {showCalendar && (
+                        <div className="absolute top-full left-0 mt-2 z-50 w-72 p-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-xl animate-fadeIn">
+                            {/* Calendar Header */}
+                            <div className="flex items-center justify-between mb-3 px-1">
+                                <button
+                                    type="button"
+                                    onClick={handlePrevMonth}
+                                    className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-gray-300 transition"
+                                >
+                                    ◀
+                                </button>
+                                <span className="font-bold text-xs text-gray-800 dark:text-white">
+                                    {monthNames[viewMonth]} {viewYear}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={handleNextMonth}
+                                    className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-gray-300 transition"
+                                >
+                                    ▶
+                                </button>
+                            </div>
+
+                            {/* Weekday Labels */}
+                            <div className="grid grid-cols-7 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 mb-1">
+                                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                            </div>
+
+                            {/* Calendar Days Grid */}
+                            <div className="grid grid-cols-7 gap-1 text-xs">
+                                {/* Blank padding days */}
+                                {Array.from({ length: startDayOfWeek }).map((_, i) => (
+                                    <div key={`empty-${i}`} />
+                                ))}
+
+                                {/* Actual Days */}
+                                {Array.from({ length: daysInMonth }).map((_, i) => {
+                                    const day = i + 1;
+                                    const m = String(viewMonth + 1).padStart(2, '0');
+                                    const d = String(day).padStart(2, '0');
+                                    const dateString = `${viewYear}-${m}-${d}`;
+                                    const isSelected = dateString === baseDate;
+
+                                    return (
+                                        <button
+                                            key={day}
+                                            type="button"
+                                            onClick={() => handleSelectDay(day)}
+                                            className={`h-8 rounded-lg font-semibold flex items-center justify-center transition ${
+                                                isSelected
+                                                    ? 'bg-blue-600 text-white font-bold shadow-xs'
+                                                    : 'text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-slate-800'
+                                            }`}
+                                        >
+                                            {day}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Quick Select Today Shortcut */}
+                            <div className="mt-3 pt-2 border-t border-gray-100 dark:border-slate-800 flex justify-between items-center">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setBaseDate('2026-08-01');
+                                        setShowCalendar(false);
+                                    }}
+                                    className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                                >
+                                    Aug 1, 2026
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setBaseDate('2026-08-19');
+                                        setShowCalendar(false);
+                                    }}
+                                    className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                                >
+                                    Today (Aug 19)
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
+                {/* Frequency Selector */}
                 <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Frequency
@@ -117,6 +281,7 @@ export default function DueDateCalculator() {
                     </select>
                 </div>
 
+                {/* Number of Payments */}
                 <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Total Payments
@@ -133,7 +298,7 @@ export default function DueDateCalculator() {
                 </div>
             </div>
 
-            {/* Summary Highlights: Next Payment and Final Completion Date */}
+            {/* Summary Highlights */}
             {nextPayment && (
                 <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-950 dark:to-slate-900 border border-blue-100 dark:border-slate-800 rounded-xl flex flex-col gap-3 shadow-2xs">
                     <div className="flex flex-col items-center justify-center text-center gap-0.5">
@@ -158,7 +323,7 @@ export default function DueDateCalculator() {
                 </div>
             )}
 
-            {/* Lineup List for All Installments */}
+            {/* Lineup List */}
             <div className="bg-gray-50 dark:bg-slate-800/60 p-3 rounded-xl border border-gray-100 dark:border-slate-700/60">
                 <div className="flex justify-between items-center mb-2">
                     <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
