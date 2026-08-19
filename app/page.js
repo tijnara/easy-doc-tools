@@ -4,6 +4,7 @@ import SplashScreen from '@/components/SplashScreen';
 import LineDeleter from '@/components/LineDeleter';
 import PdfConverter from '@/components/PdfConverter';
 import PdfMerger from '@/components/PdfMerger';
+import DueDateCalculator from '@/components/DueDateCalculator';
 import Calculator from '@/components/Calculator';
 
 export default function Home() {
@@ -11,7 +12,6 @@ export default function Home() {
     const [activeTab, setActiveTab] = useState('cleaner');
     const [darkMode, setDarkMode] = useState(false);
 
-    // Initialize theme from localStorage or system preference
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme');
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -24,7 +24,6 @@ export default function Home() {
         }
     }, []);
 
-    // Toggle theme state and update HTML class & localStorage
     const toggleDarkMode = () => {
         if (darkMode) {
             document.documentElement.classList.remove('dark');
@@ -39,7 +38,6 @@ export default function Home() {
 
     return (
         <div className={darkMode ? 'dark' : ''}>
-            {/* Intro Splash Animation */}
             {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
 
             <main className="min-h-screen bg-slate-50 dark:bg-slate-950 py-10 px-4 flex flex-col justify-between relative transition-colors duration-300">
@@ -52,12 +50,10 @@ export default function Home() {
                         aria-label="Toggle Dark Mode"
                     >
                         {darkMode ? (
-                            /* Sun Icon */
                             <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
                         ) : (
-                            /* Moon Icon */
                             <svg className="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                             </svg>
@@ -67,7 +63,7 @@ export default function Home() {
 
                 <div className="max-w-6xl mx-auto w-full flex flex-col gap-6">
 
-                    {/* Header with Integrated Origami Brand Icon */}
+                    {/* Header */}
                     <div className="flex flex-col items-center justify-center text-center">
                         <div className="flex items-center gap-3 mb-1">
                             <div className="w-10 h-10 bg-purple-950 p-1.5 rounded-xl flex items-center justify-center shadow-md shadow-purple-900/20 border border-purple-800">
@@ -99,21 +95,21 @@ export default function Home() {
                             </div>
                             <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Workspace Kit</h1>
                         </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Essential text, document, PDF, and calculation tools</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Essential text, document, PDF, due date, and calculation tools</p>
                     </div>
 
-                    {/* Side-by-Side Main Container */}
+                    {/* Side-by-Side Main Layout */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-                        {/* Calculator Section (Order 1 on mobile: appears top when stacked) */}
+                        {/* Calculator Section */}
                         <div className="order-1 lg:order-2 lg:col-span-5 w-full">
                             <Calculator />
                         </div>
 
-                        {/* Document Tools Section (Order 2 on mobile: appears below calculator when stacked) */}
+                        {/* Document & Due Date Tools Section */}
                         <div className="order-2 lg:order-1 lg:col-span-7 flex flex-col gap-4">
-                            {/* Tool Navigation Tabs */}
-                            <div className="grid grid-cols-3 bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1">
+                            {/* Tool Navigation Tabs (4 Tabs) */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1">
                                 <button
                                     onClick={() => setActiveTab('cleaner')}
                                     className={`py-2.5 text-xs font-bold rounded-xl transition ${
@@ -144,12 +140,23 @@ export default function Home() {
                                 >
                                     Merge
                                 </button>
+                                <button
+                                    onClick={() => setActiveTab('duedate')}
+                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                        activeTab === 'duedate'
+                                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                    }`}
+                                >
+                                    Due Date
+                                </button>
                             </div>
 
-                            {/* Active Document Tool View */}
+                            {/* Active Tool Views */}
                             {activeTab === 'cleaner' && <LineDeleter />}
                             {activeTab === 'converter' && <PdfConverter />}
                             {activeTab === 'merger' && <PdfMerger />}
+                            {activeTab === 'duedate' && <DueDateCalculator />}
                         </div>
 
                     </div>
