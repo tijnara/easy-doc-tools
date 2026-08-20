@@ -207,8 +207,14 @@ export default function Home() {
 
                 {/* Footer Author Badge */}
                 <footer className="mt-12 text-center text-xs text-gray-500 dark:text-gray-400 font-medium flex items-center justify-center">
-                    <div className="inline-flex items-center gap-1.5 bg-white dark:bg-slate-900 px-4 py-2 rounded-full border border-gray-200/80 dark:border-slate-800 shadow-sm hover:border-violet-300 dark:hover:border-violet-600 transition-colors">
-                        <div className="relative flex items-center justify-center w-5 h-5">
+                    <a
+                        href="https://portfolio-aranjit-archita.vercel.app/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Visit tijnara's portfolio"
+                        className="inline-flex items-center gap-1.5 bg-white dark:bg-slate-900 px-4 py-2 rounded-full border border-gray-200/80 dark:border-slate-800 shadow-sm hover:border-violet-300 dark:hover:border-violet-600 transition-colors cursor-pointer select-none active:scale-95"
+                    >
+                        <div className="relative flex items-center justify-center w-5 h-5 pointer-events-none">
                             <span className="absolute inset-0 bg-violet-400/20 rounded-full animate-ping"></span>
                             <svg
                                 className="w-4.5 h-4.5 text-violet-600 dark:text-violet-400 relative z-10"
@@ -228,9 +234,9 @@ export default function Home() {
                             </svg>
                         </div>
 
-                        <span className="text-gray-500 dark:text-gray-400">by</span>
-                        <span className="font-bold text-gray-800 dark:text-gray-200 tracking-wide">tijnara</span>
-                    </div>
+                        <span className="text-gray-500 dark:text-gray-400 pointer-events-none">by</span>
+                        <span className="font-bold text-gray-800 dark:text-gray-200 tracking-wide pointer-events-none">tijnara</span>
+                    </a>
                 </footer>
 
                 {/* Corner Watermark Badge */}
