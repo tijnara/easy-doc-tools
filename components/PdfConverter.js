@@ -152,17 +152,22 @@ export default function PdfConverter() {
         <div className="flex flex-col gap-4 p-5 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
             {/* Header with Live iLoveAPI Account Balance Badge */}
             <div className="flex items-center justify-between flex-wrap gap-2">
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white">Convert to PDF</h2>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white" title="Convert Office documents, images, or text to PDF">
+                    Convert to PDF
+                </h2>
 
-                <div className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-colors ${
-                    fetchingCredits
-                        ? 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-700'
-                        : liveCredits > 100
-                            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
-                            : liveCredits > 0
-                                ? 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800/60'
-                                : 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/60'
-                }`}>
+                <div
+                    title="Live iLoveAPI credit balance for server-side Word & Excel conversion"
+                    className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer ${
+                        fetchingCredits
+                            ? 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-700'
+                            : liveCredits > 100
+                                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
+                                : liveCredits > 0
+                                    ? 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800/60'
+                                    : 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/60'
+                    }`}
+                >
                     <span className={`w-2 h-2 rounded-full ${fetchingCredits ? 'bg-gray-400 animate-pulse' : 'bg-amber-500 animate-pulse'}`}></span>
                     <span>
                         {fetchingCredits
@@ -182,6 +187,7 @@ export default function PdfConverter() {
                     {liveCredits !== null && liveCredits <= 0 && (
                         <button
                             onClick={redirectToILovePdf}
+                            title="Redirect to official iLovePDF website"
                             className="underline font-bold text-red-800 dark:text-red-300 ml-2"
                         >
                             Go to iLovePDF →
@@ -197,6 +203,7 @@ export default function PdfConverter() {
                         setMode('office');
                         setErrorMessage('');
                     }}
+                    title="Convert Word (.docx) or Excel (.xlsx) files to PDF"
                     className={`py-2 text-xs font-bold rounded-lg transition ${
                         mode === 'office'
                             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
@@ -210,6 +217,7 @@ export default function PdfConverter() {
                         setMode('image');
                         setErrorMessage('');
                     }}
+                    title="Convert JPG or PNG images into a PDF document"
                     className={`py-2 text-xs font-bold rounded-lg transition ${
                         mode === 'image'
                             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
@@ -223,6 +231,7 @@ export default function PdfConverter() {
                         setMode('text');
                         setErrorMessage('');
                     }}
+                    title="Convert plain text directly into a PDF file"
                     className={`py-2 text-xs font-bold rounded-lg transition ${
                         mode === 'text'
                             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
@@ -236,7 +245,10 @@ export default function PdfConverter() {
             {/* Input Views */}
             {mode === 'office' && (
                 <div className="flex flex-col gap-3">
-                    <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50 transition">
+                    <label
+                        title="Click to select Word or Excel document from your device"
+                        className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50 transition"
+                    >
                         <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">Select Word or Excel Document</span>
                         <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">Supports .docx and .xlsx</span>
                         <input
@@ -250,7 +262,10 @@ export default function PdfConverter() {
                         />
                     </label>
                     {officeFile && (
-                        <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-xl border border-gray-100 dark:border-slate-700/60">
+                        <div
+                            title={`Full Filename: ${officeFile.name}\nFile Size: ${(officeFile.size / 1024).toFixed(1)} KB`}
+                            className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-xl border border-gray-100 dark:border-slate-700/60 cursor-pointer"
+                        >
                             <p className="text-xs font-bold text-gray-700 dark:text-gray-300 truncate">📄 {officeFile.name}</p>
                         </div>
                     )}
@@ -259,7 +274,10 @@ export default function PdfConverter() {
 
             {mode === 'image' && (
                 <div className="flex flex-col gap-3">
-                    <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50 transition">
+                    <label
+                        title="Click to select JPG or PNG image files"
+                        className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50 transition"
+                    >
                         <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">Select Images (JPG / PNG)</span>
                         <input
                             type="file"
@@ -272,14 +290,34 @@ export default function PdfConverter() {
                             className="hidden"
                         />
                     </label>
+
                     {images.length > 0 && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold">{images.length} image(s) selected</p>
+                        <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Selected Images ({images.length}):
+                            </p>
+                            {images.map((img, idx) => (
+                                <div
+                                    key={idx}
+                                    title={`Full Filename: ${img.name}\nSize: ${(img.size / 1024).toFixed(1)} KB`}
+                                    className="p-2 bg-gray-50 dark:bg-slate-800/60 rounded-lg border border-gray-100 dark:border-slate-700/60 flex items-center justify-between cursor-pointer"
+                                >
+                                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">
+                                        🖼️ {img.name}
+                                    </span>
+                                    <span className="text-[10px] text-gray-400 font-mono">
+                                        {(img.size / 1024).toFixed(0)} KB
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
                     )}
                 </div>
             )}
 
             {mode === 'text' && (
                 <textarea
+                    title="Type or paste the full text content you wish to render into a PDF"
                     className="w-full h-40 p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base resize-none text-gray-800 dark:text-gray-100 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-colors"
                     placeholder="Enter text to convert into a PDF document..."
                     value={textInput}
@@ -295,6 +333,7 @@ export default function PdfConverter() {
                 <button
                     onClick={handleConvert}
                     disabled={loading}
+                    title="Process selected document and download output PDF"
                     className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold active:scale-95 transition shadow-sm shadow-blue-500/20"
                 >
                     {loading
@@ -308,6 +347,7 @@ export default function PdfConverter() {
                 <button
                     onClick={redirectToILovePdf}
                     type="button"
+                    title="Open official iLovePDF website in a new window"
                     className="w-full py-3 border border-gray-200 dark:border-slate-700/80 bg-gray-50 dark:bg-slate-800/50 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-300 rounded-xl font-medium text-xs flex items-center justify-center gap-2 active:scale-95 transition"
                 >
                     <span>Visit Official Website for Converting other files to PDF</span>
@@ -321,6 +361,7 @@ export default function PdfConverter() {
             <div className="mt-2 border-t pt-3 border-gray-100 dark:border-slate-800">
                 <button
                     onClick={() => setShowHistory(!showHistory)}
+                    title="Toggle recent conversion history list"
                     className="flex justify-between items-center w-full text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 uppercase tracking-wider py-1 transition"
                 >
                     <span>Recent Conversions ({history.length}/10)</span>
@@ -335,7 +376,8 @@ export default function PdfConverter() {
                             history.map((item) => (
                                 <div
                                     key={item.id}
-                                    className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-xl border border-gray-100 dark:border-slate-700/60 transition flex items-center justify-between"
+                                    title={`Full Filename: ${item.file_name}\nConverted: ${new Date(item.created_at).toLocaleString()}`}
+                                    className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-xl border border-gray-100 dark:border-slate-700/60 transition flex items-center justify-between cursor-pointer"
                                 >
                                     <div className="flex flex-col gap-0.5 truncate pr-2">
                                         <span className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">

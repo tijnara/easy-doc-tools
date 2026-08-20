@@ -1,3 +1,16 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Always keep mouse cursor active and visible across all elements */
+html, body, *, *::before, *::after {
+    cursor: auto;
+}
+
+button, a, input[type="button"], input[type="submit"], [role="button"], label[for] {
+    cursor: pointer;
+}
+
+textarea, input[type="text"], input[type="number"], input[type="date"] {
+    cursor: text;
+}
