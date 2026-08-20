@@ -16,9 +16,10 @@ export default function PdfMerger() {
     const handleFileSelect = (e) => {
         const selectedFiles = Array.from(e.target.files);
         setFiles((prev) => [...prev, ...selectedFiles]);
+        e.target.value = ''; // Reset input selection
     };
 
-    // Helper to format output file name correctly
+    // Format output file name with .pdf extension
     const getFinalFileName = () => {
         const trimmed = outputFileName.trim() || 'combined-document';
         return trimmed.endsWith('.pdf') ? trimmed : `${trimmed}.pdf`;
@@ -105,7 +106,7 @@ export default function PdfMerger() {
         setFiles((prev) => prev.filter((_, i) => i !== index));
     };
 
-    // Triggers Preview Modal first so file can be reviewed and renamed before download
+    // Generate merged PDF and open preview modal
     const handleMergeAndDownload = async () => {
         if (files.length < 2) {
             alert('Please select at least 2 PDF files to combine.');
@@ -122,12 +123,19 @@ export default function PdfMerger() {
         setLoading(false);
     };
 
+    // Download combined PDF and reset state
     const handleFinalDownload = () => {
         if (!mergedPreviewUrl) return;
+
         const a = document.createElement('a');
         a.href = mergedPreviewUrl;
         a.download = getFinalFileName();
         a.click();
+
+        // Reset lineup files, output filename, and close preview modal
+        handleClosePreview();
+        setFiles([]);
+        setOutputFileName('combined-document');
     };
 
     return (
@@ -332,7 +340,7 @@ export default function PdfMerger() {
 
                                 <button
                                     onClick={handleFinalDownload}
-                                    title={`Download merged PDF as "${getFinalFileName()}"`}
+                                    title={`Download merged PDF as "${getFinalFileName()}" and clear state`}
                                     className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-xl transition shadow-sm shadow-green-500/20 active:scale-95"
                                 >
                                     📥 Download Combined PDF
