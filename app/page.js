@@ -10,11 +10,28 @@ import Calculator from '@/components/Calculator';
 import Notepad from '@/components/Notepad';
 
 export default function Home() {
-    const [showSplash, setShowSplash] = useState(true);
+    const [showSplash, setShowSplash] = useState(false);
     const [activeTab, setActiveTab] = useState('cleaner');
     const [darkMode, setDarkMode] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
 
+    // Restore splash screen status & active tab from sessionStorage on mount
     useEffect(() => {
+        setIsMounted(true);
+
+        // 1. Splash Screen Check (Show splash screen only once per session)
+        const hasSeenSplash = sessionStorage.getItem('has_seen_splash');
+        if (!hasSeenSplash) {
+            setShowSplash(true);
+        }
+
+        // 2. Active Tab Restore (Returns to exact tab user was working on)
+        const savedTab = sessionStorage.getItem('active_workspace_tab');
+        if (savedTab) {
+            setActiveTab(savedTab);
+        }
+
+        // 3. Dark Mode Restore
         const savedTheme = localStorage.getItem('theme');
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
@@ -25,6 +42,16 @@ export default function Home() {
             document.documentElement.classList.remove('dark');
         }
     }, []);
+
+    const handleTabChange = (tabName) => {
+        setActiveTab(tabName);
+        sessionStorage.setItem('active_workspace_tab', tabName);
+    };
+
+    const handleFinishSplash = () => {
+        setShowSplash(false);
+        sessionStorage.setItem('has_seen_splash', 'true');
+    };
 
     const toggleDarkMode = () => {
         if (darkMode) {
@@ -38,9 +65,11 @@ export default function Home() {
         }
     };
 
+    if (!isMounted) return null;
+
     return (
         <div className={darkMode ? 'dark' : ''}>
-            {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+            {showSplash && <SplashScreen onFinish={handleFinishSplash} />}
 
             <main className="min-h-screen bg-slate-50 dark:bg-slate-950 py-10 px-4 flex flex-col justify-between relative transition-colors duration-300">
 
@@ -111,10 +140,10 @@ export default function Home() {
 
                         {/* Main Document & Due Date Tools Section */}
                         <div className="order-2 lg:order-1 lg:col-span-7 flex flex-col gap-4">
-                            {/* Tool Navigation Tabs (5 Tabs) */}
+                            {/* Tool Navigation Tabs */}
                             <div className="grid grid-cols-2 sm:grid-cols-5 bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1">
                                 <button
-                                    onClick={() => setActiveTab('cleaner')}
+                                    onClick={() => handleTabChange('cleaner')}
                                     className={`py-2.5 text-xs font-bold rounded-xl transition ${
                                         activeTab === 'cleaner'
                                             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
@@ -124,7 +153,7 @@ export default function Home() {
                                     Clean Text
                                 </button>
                                 <button
-                                    onClick={() => setActiveTab('converter')}
+                                    onClick={() => handleTabChange('converter')}
                                     className={`py-2.5 text-xs font-bold rounded-xl transition ${
                                         activeTab === 'converter'
                                             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
@@ -134,7 +163,7 @@ export default function Home() {
                                     Convert
                                 </button>
                                 <button
-                                    onClick={() => setActiveTab('merger')}
+                                    onClick={() => handleTabChange('merger')}
                                     className={`py-2.5 text-xs font-bold rounded-xl transition ${
                                         activeTab === 'merger'
                                             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
@@ -144,7 +173,7 @@ export default function Home() {
                                     Merge
                                 </button>
                                 <button
-                                    onClick={() => setActiveTab('splitpdf')}
+                                    onClick={() => handleTabChange('splitpdf')}
                                     className={`py-2.5 text-xs font-bold rounded-xl transition ${
                                         activeTab === 'splitpdf'
                                             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
@@ -154,7 +183,7 @@ export default function Home() {
                                     Split PDF
                                 </button>
                                 <button
-                                    onClick={() => setActiveTab('duedate')}
+                                    onClick={() => handleTabChange('duedate')}
                                     className={`py-2.5 text-xs font-bold rounded-xl transition ${
                                         activeTab === 'duedate'
                                             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
