@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { removeExtraSpaces } from '../lib/textUtils';
 
 export default function LineDeleter() {
@@ -12,6 +12,14 @@ export default function LineDeleter() {
     const [undoStack, setUndoStack] = useState([]);
     const [redoStack, setRedoStack] = useState([]);
     const isUndoRedoRef = useRef(false);
+
+    // Restore saved text from localStorage when the component mounts
+    useEffect(() => {
+        const savedText = localStorage.getItem('clean_text_input');
+        if (savedText) {
+            setInput(savedText);
+        }
+    }, []);
 
     // Silent server logging
     const saveToHistory = async (cleanedText) => {
@@ -35,6 +43,7 @@ export default function LineDeleter() {
             setRedoStack([]);
         }
         setInput(newValue);
+        localStorage.setItem('clean_text_input', newValue);
     };
 
     const handleUndo = () => {
@@ -46,6 +55,7 @@ export default function LineDeleter() {
 
         isUndoRedoRef.current = true;
         setInput(previousValue);
+        localStorage.setItem('clean_text_input', previousValue);
         showToast('Undone!');
         setTimeout(() => {
             isUndoRedoRef.current = false;
@@ -61,6 +71,7 @@ export default function LineDeleter() {
 
         isUndoRedoRef.current = true;
         setInput(nextValue);
+        localStorage.setItem('clean_text_input', nextValue);
         showToast('Redone!');
         setTimeout(() => {
             isUndoRedoRef.current = false;
@@ -138,6 +149,7 @@ export default function LineDeleter() {
     const handleClear = () => {
         if (!input) return;
         handleInputChange('');
+        localStorage.removeItem('clean_text_input');
         showToast('Cleared!');
     };
 

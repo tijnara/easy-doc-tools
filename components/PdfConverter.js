@@ -147,7 +147,7 @@ export default function PdfConverter() {
         }
 
         const redirectUrl = getILovePdfUrl(firstFile);
-        setErrorMessage(`"${firstFile.name}" is not supported here. For PowerPoint, video, PDF, or other files, please use this link: ${redirectUrl.replace('https://', '')}`);
+        setErrorMessage(`"${firstFile.name}" is not supported here. For PowerPoint, video, PDF, or other files, please click the button`);
     };
 
     const handleConvert = async () => {
