@@ -1,13 +1,11 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { removeExtraSpaces } from '../lib/textUtils';
 import { supabase } from '../lib/supabase';
 
 export default function LineDeleter() {
     const [input, setInput] = useState('');
     const [feedback, setFeedback] = useState('');
-    const [history, setHistory] = useState([]);
-    const [showHistory, setShowHistory] = useState(false);
 
     // Initial default dimensions
     const INITIAL_DIMENSIONS = { width: '100%', height: 224 };
@@ -18,19 +16,14 @@ export default function LineDeleter() {
     const [redoStack, setRedoStack] = useState([]);
     const isUndoRedoRef = useRef(false);
 
-    useEffect(() => {
-        fetchHistory();
-    }, []);
-
-    const fetchHistory = async () => {
-        const { data, error } = await supabase
-            .from('text_history')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(10);
-
-        if (!error && data) {
-            setHistory(data);
+    // Silent database logging (Supabase)
+    const saveToHistory = async (cleanedText) => {
+        try {
+            await supabase
+                .from('text_history')
+                .insert([{ cleaned_text: cleanedText }]);
+        } catch (err) {
+            console.error('Supabase database sync error:', err);
         }
     };
 
@@ -139,14 +132,8 @@ export default function LineDeleter() {
         navigator.clipboard.writeText(cleanedText);
         showToast('Cleaned & Copied!');
 
-        const { data, error } = await supabase
-            .from('text_history')
-            .insert([{ cleaned_text: cleanedText }])
-            .select();
-
-        if (!error && data) {
-            setHistory((prev) => [data[0], ...prev.slice(0, 9)]);
-        }
+        // Silent save to Supabase database
+        await saveToHistory(cleanedText);
     };
 
     const handleClear = () => {
@@ -268,43 +255,6 @@ export default function LineDeleter() {
                         Clear
                     </button>
                 </div>
-            </div>
-
-            {/* History Drawer */}
-            <div className="mt-2 border-t pt-3 border-gray-100 dark:border-slate-800">
-                <button
-                    onClick={() => setShowHistory(!showHistory)}
-                    className="flex justify-between items-center w-full text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 uppercase tracking-wider py-1 transition"
-                >
-                    <span>Recent History ({history.length}/10)</span>
-                    <span>{showHistory ? '▲ Hide' : '▼ Show'}</span>
-                </button>
-
-                {showHistory && (
-                    <div className="mt-2 space-y-2 max-h-56 overflow-y-auto pr-1">
-                        {history.length === 0 ? (
-                            <p className="text-xs text-gray-400 dark:text-gray-500 italic py-2">No history saved yet.</p>
-                        ) : (
-                            history.map((item) => (
-                                <div
-                                    key={item.id}
-                                    onClick={() => {
-                                        handleInputChange(item.cleaned_text);
-                                        showToast('Loaded from history!');
-                                    }}
-                                    className="p-3 bg-gray-50 dark:bg-slate-800/60 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700/60 cursor-pointer active:scale-98 transition"
-                                >
-                                    <p className="text-xs text-gray-700 dark:text-gray-300 line-clamp-2 font-mono">
-                                        {item.cleaned_text}
-                                    </p>
-                                    <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 block">
-                                        {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                )}
             </div>
         </div>
     );

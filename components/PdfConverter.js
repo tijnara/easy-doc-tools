@@ -14,39 +14,25 @@ export default function PdfConverter() {
     const [liveCredits, setLiveCredits] = useState(null);
     const [fetchingCredits, setFetchingCredits] = useState(true);
 
-    // History state
-    const [history, setHistory] = useState([]);
-    const [showHistory, setShowHistory] = useState(false);
+    // Preview Modal & Custom Naming state
+    const [previewUrl, setPreviewUrl] = useState(null);
+    const [previewBlob, setPreviewBlob] = useState(null);
+    const [outputFileName, setOutputFileName] = useState('');
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
 
-    useEffect(() => {
-        fetchHistory();
-    }, []);
-
-    const fetchHistory = async () => {
-        const { data, error } = await supabase
-            .from('pdf_conversion_history')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(10);
-
-        if (!error && data) {
-            setHistory(data);
-        }
-    };
-
+    // Silent database logging (Supabase)
     const saveToHistory = async (fileName, typeLabel) => {
-        const { data, error } = await supabase
-            .from('pdf_conversion_history')
-            .insert([
-                {
-                    file_name: fileName,
-                    conversion_type: typeLabel,
-                },
-            ])
-            .select();
-
-        if (!error && data) {
-            setHistory((prev) => [data[0], ...prev.slice(0, 9)]);
+        try {
+            await supabase
+                .from('pdf_conversion_history')
+                .insert([
+                    {
+                        file_name: fileName,
+                        conversion_type: typeLabel,
+                    },
+                ]);
+        } catch (err) {
+            console.error('Supabase database sync error:', err);
         }
     };
 
@@ -175,14 +161,6 @@ export default function PdfConverter() {
         setErrorMessage(`"${firstFile.name}" is not supported here. For PowerPoint, video, PDF, or other files, please use this link: ${redirectUrl.replace('https://', '')}`);
     };
 
-    const downloadBlob = (blob, filename) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-    };
-
     const handleConvert = async () => {
         if (mode === 'office' && liveCredits !== null && liveCredits <= 0) {
             redirectToILovePdf(officeFile);
@@ -193,6 +171,9 @@ export default function PdfConverter() {
         setErrorMessage('');
 
         try {
+            let blob;
+            let defaultName = 'converted-document';
+
             if (mode === 'office') {
                 if (!officeFile) {
                     setErrorMessage('Please select a Word (.docx) or Excel (.xlsx) file.');
@@ -213,9 +194,8 @@ export default function PdfConverter() {
                     throw new Error(errorData.error || 'Backend conversion failed.');
                 }
 
-                const pdfBlob = await response.blob();
-                downloadBlob(pdfBlob, `${officeFile.name.split('.')[0]}.pdf`);
-                await saveToHistory(officeFile.name, 'Office to PDF');
+                blob = await response.blob();
+                defaultName = `${officeFile.name.replace(/\.[^/.]+$/, '')}_converted`;
 
             } else if (mode === 'image') {
                 if (images.length === 0) {
@@ -224,8 +204,8 @@ export default function PdfConverter() {
                     return;
                 }
                 const pdfBytes = await convertImagesToPdf(images);
-                downloadBlob(new Blob([pdfBytes], { type: 'application/pdf' }), 'converted-images.pdf');
-                await saveToHistory(`${images.length} Image(s)`, 'Image to PDF');
+                blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                defaultName = 'converted_images';
 
             } else {
                 if (!textInput.trim()) {
@@ -234,16 +214,52 @@ export default function PdfConverter() {
                     return;
                 }
                 const pdfBytes = await convertTextToPdf(textInput);
-                downloadBlob(new Blob([pdfBytes], { type: 'application/pdf' }), 'converted-text.pdf');
-                await saveToHistory(`Text Doc (${textInput.trim().substring(0, 20)}...)`, 'Text to PDF');
+                blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                defaultName = 'converted_text_document';
             }
+
+            const url = URL.createObjectURL(blob);
+
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+
+            setPreviewBlob(blob);
+            setPreviewUrl(url);
+            setOutputFileName(defaultName);
+            setShowPreviewModal(true);
 
             fetchLiveCredits(false);
         } catch (err) {
             console.error(err);
             setErrorMessage(`Conversion Error: ${err.message || 'Failed to process document.'}`);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
+    };
+
+    const handleClosePreview = () => {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+        setPreviewBlob(null);
+        setShowPreviewModal(false);
+    };
+
+    const handleDownload = async () => {
+        if (!previewBlob || !previewUrl) return;
+
+        const cleanName = outputFileName.trim() || 'converted-document';
+        const finalFileName = cleanName.endsWith('.pdf') ? cleanName : `${cleanName}.pdf`;
+
+        const a = document.createElement('a');
+        a.href = previewUrl;
+        a.download = finalFileName;
+        a.click();
+
+        // Silent save to Supabase database
+        let typeLabel = mode === 'office' ? 'Office to PDF' : mode === 'image' ? 'Image to PDF' : 'Text to PDF';
+        let loggedName = mode === 'office' && officeFile ? officeFile.name : mode === 'image' ? `${images.length} Image(s)` : finalFileName;
+        await saveToHistory(loggedName, typeLabel);
+
+        handleClosePreview();
     };
 
     return (
@@ -446,14 +462,14 @@ export default function PdfConverter() {
                 <button
                     onClick={handleConvert}
                     disabled={loading}
-                    title="Process selected document and download output PDF"
-                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold active:scale-95 transition shadow-sm shadow-blue-500/20"
+                    title="Process selected document and preview output PDF"
+                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold active:scale-95 transition shadow-sm shadow-blue-500/20 disabled:bg-gray-300 dark:disabled:bg-slate-800 disabled:cursor-not-allowed"
                 >
                     {loading
                         ? 'Rendering Pixel-Perfect PDF...'
                         : mode === 'office' && liveCredits !== null && liveCredits <= 0
                             ? '0 Credits — Go to iLovePDF →'
-                            : 'Convert & Download PDF'}
+                            : 'Convert to PDF & Preview'}
                 </button>
 
                 {/* Professional Redirect Button */}
@@ -470,45 +486,77 @@ export default function PdfConverter() {
                 </button>
             </div>
 
-            {/* History Drawer */}
-            <div className="mt-2 border-t pt-3 border-gray-100 dark:border-slate-800">
-                <button
-                    onClick={() => setShowHistory(!showHistory)}
-                    title="Toggle recent conversion history list"
-                    className="flex justify-between items-center w-full text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 uppercase tracking-wider py-1 transition"
-                >
-                    <span>Recent Conversions ({history.length}/10)</span>
-                    <span>{showHistory ? '▲ Hide' : '▼ Show'}</span>
-                </button>
+            {/* Preview Modal & File Naming Window */}
+            {showPreviewModal && previewUrl && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
+                    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 w-[96vw] h-[92vh] max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col">
 
-                {showHistory && (
-                    <div className="mt-2 space-y-2 max-h-56 overflow-y-auto pr-1">
-                        {history.length === 0 ? (
-                            <p className="text-xs text-gray-400 dark:text-gray-500 italic py-2">No conversions recorded yet.</p>
-                        ) : (
-                            history.map((item) => (
-                                <div
-                                    key={item.id}
-                                    title={`Full Filename: ${item.file_name}\nConverted: ${new Date(item.created_at).toLocaleString()}`}
-                                    className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-xl border border-gray-100 dark:border-slate-700/60 transition flex items-center justify-between cursor-pointer"
-                                >
-                                    <div className="flex flex-col gap-0.5 truncate pr-2">
-                                        <span className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">
-                                            📄 {item.file_name}
-                                        </span>
-                                        <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                                            {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                    </div>
-                                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-900/50 shrink-0">
-                                        {item.conversion_type}
-                                    </span>
+                        {/* Modal Header */}
+                        <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-950 shrink-0">
+                            <div className="flex items-center gap-2">
+                                <span className="font-mono font-bold text-xs bg-green-50 dark:bg-green-950/60 text-green-600 dark:text-green-400 px-2.5 py-1 rounded-md border border-green-200 dark:border-green-900/50">
+                                    PDF Ready
+                                </span>
+                                <h3 className="text-sm font-bold text-gray-800 dark:text-white truncate">
+                                    Converted Document Preview
+                                </h3>
+                            </div>
+                            <button
+                                onClick={handleClosePreview}
+                                title="Close preview"
+                                className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg bg-gray-100 dark:bg-slate-800 transition"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* PDF Preview Frame */}
+                        <div className="p-2 sm:p-3 bg-gray-100 dark:bg-slate-950 flex-1 w-full h-full min-h-0 overflow-hidden">
+                            <iframe
+                                src={`${previewUrl}#view=FitH`}
+                                className="w-full h-full rounded-xl border border-gray-200 dark:border-slate-800 bg-white"
+                                title="PDF Convert Preview"
+                            />
+                        </div>
+
+                        {/* File Naming & Download Controls */}
+                        <div className="px-4 py-3 border-t border-gray-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center bg-gray-50 dark:bg-slate-950 gap-3 shrink-0">
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                                <label className="text-xs font-bold text-gray-600 dark:text-gray-300 shrink-0">
+                                    File Name:
+                                </label>
+                                <div className="flex items-center gap-1 w-full sm:w-64">
+                                    <input
+                                        type="text"
+                                        value={outputFileName}
+                                        onChange={(e) => setOutputFileName(e.target.value)}
+                                        placeholder="Enter document name"
+                                        title="Specify filename before downloading"
+                                        className="w-full p-2 border rounded-xl text-xs font-semibold text-gray-800 dark:text-gray-100 bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                    <span className="text-xs font-bold text-gray-400">.pdf</span>
                                 </div>
-                            ))
-                        )}
+                            </div>
+
+                            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                <button
+                                    onClick={handleClosePreview}
+                                    className="px-4 py-2 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 font-semibold text-xs rounded-xl transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleDownload}
+                                    title="Download PDF to device"
+                                    className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-xl transition shadow-sm shadow-green-500/20 active:scale-95"
+                                >
+                                    📥 Download PDF
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 }

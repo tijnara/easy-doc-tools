@@ -7,6 +7,7 @@ import PdfMerger from '@/components/PdfMerger';
 import PdfSplitter from '@/components/PdfSplitter';
 import DueDateCalculator from '@/components/DueDateCalculator';
 import Calculator from '@/components/Calculator';
+import Notepad from '@/components/Notepad';
 
 export default function Home() {
     const [showSplash, setShowSplash] = useState(true);
@@ -96,18 +97,19 @@ export default function Home() {
                             </div>
                             <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Workspace Kit</h1>
                         </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Essential text, document, PDF, due date, and calculation tools</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Essential text, document, PDF, due date, calculation, and notepad tools</p>
                     </div>
 
                     {/* Side-by-Side Main Layout */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-                        {/* Calculator Section */}
-                        <div className="order-1 lg:order-2 lg:col-span-5 w-full">
+                        {/* Always Visible Side Panel: Calculator & Notepad */}
+                        <div className="order-1 lg:order-2 lg:col-span-5 w-full flex flex-col gap-6">
                             <Calculator />
+                            <Notepad />
                         </div>
 
-                        {/* Document & Due Date Tools Section */}
+                        {/* Main Document & Due Date Tools Section */}
                         <div className="order-2 lg:order-1 lg:col-span-7 flex flex-col gap-4">
                             {/* Tool Navigation Tabs (5 Tabs) */}
                             <div className="grid grid-cols-2 sm:grid-cols-5 bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1">

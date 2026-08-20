@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { splitPdfPages, getPdfPageCount } from '../lib/pdfUtils';
 import { supabase } from '../lib/supabase';
 
@@ -17,37 +17,8 @@ export default function PdfSplitter() {
     const [outputFileName, setOutputFileName] = useState('');
     const [showPreviewModal, setShowPreviewModal] = useState(false);
 
-    // Local Device History state
-    const [localHistory, setLocalHistory] = useState([]);
-    const [showHistory, setShowHistory] = useState(false);
-
-    // Load local device history on mount
-    useEffect(() => {
-        const saved = localStorage.getItem('pdf_split_history_local');
-        if (saved) {
-            try {
-                setLocalHistory(JSON.parse(saved));
-            } catch (e) {
-                console.error('Failed to parse local history:', e);
-            }
-        }
-    }, []);
-
-    // Save to local device storage AND silently send to Supabase database
-    const recordSplitHistory = async (fileName, rangeStr) => {
-        const newEntry = {
-            id: Date.now(),
-            file_name: fileName,
-            split_range: rangeStr,
-            created_at: new Date().toISOString(),
-        };
-
-        // 1. Update local computer history (localStorage)
-        const updated = [newEntry, ...localHistory.filter(i => i.id !== newEntry.id).slice(0, 9)];
-        setLocalHistory(updated);
-        localStorage.setItem('pdf_split_history_local', JSON.stringify(updated));
-
-        // 2. Silent database logging (Supabase)
+    // Silent database logging (Supabase)
+    const saveToHistory = async (fileName, rangeStr) => {
         try {
             await supabase
                 .from('pdf_split_history')
@@ -55,11 +26,6 @@ export default function PdfSplitter() {
         } catch (err) {
             console.error('Supabase database sync error:', err);
         }
-    };
-
-    const clearLocalHistory = () => {
-        localStorage.removeItem('pdf_split_history_local');
-        setLocalHistory([]);
     };
 
     const handleFileSelect = async (e) => {
@@ -152,8 +118,8 @@ export default function PdfSplitter() {
         a.download = finalFileName;
         a.click();
 
-        // Save to this computer's localStorage and silently upload to Supabase
-        await recordSplitHistory(file ? file.name : finalFileName, rangeInput);
+        // Silent save to Supabase database
+        await saveToHistory(file ? file.name : finalFileName, rangeInput);
 
         handleClosePreview();
     };
@@ -347,63 +313,6 @@ export default function PdfSplitter() {
                     </div>
                 </div>
             )}
-
-            {/* Local Computer History Drawer */}
-            <div className="mt-2 border-t pt-3 border-gray-100 dark:border-slate-800">
-                <div className="flex justify-between items-center py-1">
-                    <button
-                        onClick={() => setShowHistory(!showHistory)}
-                        title="Toggle recent PDF splits created on this computer"
-                        className="flex justify-between items-center w-full text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 uppercase tracking-wider transition"
-                    >
-                        <span>Recent Splits on this PC ({localHistory.length}/10)</span>
-                        <span>{showHistory ? '▲ Hide' : '▼ Show'}</span>
-                    </button>
-
-                    {localHistory.length > 0 && showHistory && (
-                        <button
-                            onClick={clearLocalHistory}
-                            title="Clear local history from this computer"
-                            className="text-[10px] text-red-500 hover:text-red-700 font-bold shrink-0 ml-2 transition"
-                        >
-                            Clear
-                        </button>
-                    )}
-                </div>
-
-                {showHistory && (
-                    <div className="mt-2 space-y-2 max-h-56 overflow-y-auto pr-1">
-                        {localHistory.length === 0 ? (
-                            <p className="text-xs text-gray-400 dark:text-gray-500 italic py-2">
-                                No history saved on this computer.
-                            </p>
-                        ) : (
-                            localHistory.map((item) => (
-                                <div
-                                    key={item.id}
-                                    title={`File: ${item.file_name}\nExtracted Range: ${item.split_range}`}
-                                    className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-xl border border-gray-100 dark:border-slate-700/60 transition flex items-center justify-between"
-                                >
-                                    <div className="flex flex-col gap-0.5 truncate pr-2">
-                                        <span className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">
-                                            ✂️ {item.file_name}
-                                        </span>
-                                        <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                                            {new Date(item.created_at).toLocaleTimeString([], {
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                            })}
-                                        </span>
-                                    </div>
-                                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-900/50 shrink-0 font-mono">
-                                        Pages {item.split_range}
-                                    </span>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                )}
-            </div>
         </div>
     );
 }
