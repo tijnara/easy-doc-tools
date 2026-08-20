@@ -10,6 +10,7 @@ export default function PdfConverter() {
     const [textInput, setTextInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [toastMessage, setToastMessage] = useState('');
     const [liveCredits, setLiveCredits] = useState(null);
     const [fetchingCredits, setFetchingCredits] = useState(true);
 
@@ -53,7 +54,7 @@ export default function PdfConverter() {
         window.open('https://www.ilovepdf.com', '_blank', 'noopener,noreferrer');
     };
 
-    // Live credit fetcher with optional silent background updates
+    // Live credit fetcher
     const fetchLiveCredits = useCallback(async (isInitial = false) => {
         if (isInitial) setFetchingCredits(true);
         try {
@@ -61,7 +62,7 @@ export default function PdfConverter() {
             const data = await res.json();
             if (res.ok && data.remaining !== undefined) {
                 setLiveCredits(data.remaining);
-                if (data.remaining <= 0) {
+                if (data.remaining <= 0 && mode === 'office') {
                     redirectToILovePdf();
                 }
             }
@@ -70,15 +71,15 @@ export default function PdfConverter() {
         } finally {
             if (isInitial) setFetchingCredits(false);
         }
-    }, []);
+    }, [mode]);
 
-    // 10-second polling interval + focus trigger for true real-time synchronization across multiple users
+    // Background polling every 10s + window focus sync
     useEffect(() => {
         fetchLiveCredits(true);
 
         const interval = setInterval(() => {
             fetchLiveCredits(false);
-        }, 10000); // Syncs live credits every 10 seconds
+        }, 10000);
 
         const handleFocus = () => {
             fetchLiveCredits(false);
@@ -92,6 +93,75 @@ export default function PdfConverter() {
         };
     }, [fetchLiveCredits]);
 
+    // Helper functions to identify file types
+    const isWordOrExcel = (file) => {
+        const ext = file.name.split('.').pop().toLowerCase();
+        return ['docx', 'xlsx', 'xls', 'doc'].includes(ext) ||
+            file.type.includes('word') || file.type.includes('excel') || file.type.includes('spreadsheet');
+    };
+
+    const isImage = (file) => {
+        const ext = file.name.split('.').pop().toLowerCase();
+        return file.type.startsWith('image/') || ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(ext);
+    };
+
+    const isText = (file) => {
+        const ext = file.name.split('.').pop().toLowerCase();
+        return file.type.startsWith('text/') || ['txt', 'csv', 'md', 'json', 'log'].includes(ext);
+    };
+
+    const showToast = (msg) => {
+        setToastMessage(msg);
+        setTimeout(() => setToastMessage(''), 3500);
+    };
+
+    // Smart file inspector & router
+    const handleSmartFileSelect = (fileList) => {
+        if (!fileList || fileList.length === 0) return;
+        const selected = Array.from(fileList);
+        const firstFile = selected[0];
+
+        setErrorMessage('');
+
+        // 1. Check if Word or Excel
+        if (isWordOrExcel(firstFile)) {
+            setOfficeFile(firstFile);
+            if (mode !== 'office') {
+                setMode('office');
+                showToast(`↗ Switched to Word/Excel tab for "${firstFile.name}"`);
+            }
+            return;
+        }
+
+        // 2. Check if Image
+        if (isImage(firstFile)) {
+            const validImages = selected.filter(isImage);
+            setImages(validImages);
+            if (mode !== 'image') {
+                setMode('image');
+                showToast(`↗ Switched to Image tab for ${validImages.length} image(s)`);
+            }
+            return;
+        }
+
+        // 3. Check if Text
+        if (isText(firstFile)) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setTextInput(e.target.result);
+                if (mode !== 'text') {
+                    setMode('text');
+                    showToast(`↗ Switched to Text tab for "${firstFile.name}"`);
+                }
+            };
+            reader.readAsText(firstFile);
+            return;
+        }
+
+        // 4. Unsupported file type
+        setErrorMessage(`"${firstFile.name}" is not supported here. For PowerPoint, video, PDF, or other files, please click the button.`);
+    };
+
     const downloadBlob = (blob, filename) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -101,7 +171,7 @@ export default function PdfConverter() {
     };
 
     const handleConvert = async () => {
-        if (liveCredits !== null && liveCredits <= 0) {
+        if (mode === 'office' && liveCredits !== null && liveCredits <= 0) {
             redirectToILovePdf();
             return;
         }
@@ -165,49 +235,58 @@ export default function PdfConverter() {
 
     return (
         <div className="flex flex-col gap-4 p-5 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
-            {/* Header with Live iLoveAPI Account Balance Badge */}
+            {/* Header with Conditional Live Credits Badge */}
             <div className="flex items-center justify-between flex-wrap gap-2">
                 <h2 className="text-xl font-bold text-gray-800 dark:text-white" title="Convert Office documents, images, or text to PDF">
                     Convert to PDF
                 </h2>
 
-                <div
-                    title="Live iLoveAPI credit balance auto-syncing every 10 seconds"
-                    className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer ${
-                        fetchingCredits
-                            ? 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-700'
-                            : liveCredits > 100
-                                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
-                                : liveCredits > 0
-                                    ? 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800/60'
-                                    : 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/60'
-                    }`}
-                >
-                    <span className={`w-2 h-2 rounded-full ${fetchingCredits ? 'bg-gray-400 animate-pulse' : 'bg-amber-500 animate-pulse'}`}></span>
-                    <span>
-                        {fetchingCredits
-                            ? 'Syncing Credits...'
-                            : liveCredits !== null
-                                ? liveCredits > 0
-                                    ? `⚡ ${liveCredits.toLocaleString()} Live Credits Remaining`
-                                    : '⚡ 0 Credits — Redirecting...'
-                                : 'iLoveAPI Connected'}
-                    </span>
-                </div>
+                {/* Only render live credits badge on Word / Excel mode */}
+                {mode === 'office' && (
+                    <div
+                        title="Live credit balance for conversion of Word/Excel to pdf auto-syncing every 10 seconds"
+                        className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer ${
+                            fetchingCredits
+                                ? 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-700'
+                                : liveCredits > 100
+                                    ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
+                                    : liveCredits > 0
+                                        ? 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800/60'
+                                        : 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/60'
+                        }`}
+                    >
+                        <span className={`w-2 h-2 rounded-full ${fetchingCredits ? 'bg-gray-400 animate-pulse' : 'bg-amber-500 animate-pulse'}`}></span>
+                        <span>
+                            {fetchingCredits
+                                ? 'Syncing Credits...'
+                                : liveCredits !== null
+                                    ? liveCredits > 0
+                                        ? `⚡ ${liveCredits.toLocaleString()} Live Credits Remaining`
+                                        : '⚡ 0 Credits — Redirecting...'
+                                    : 'iLoveAPI Connected'}
+                        </span>
+                    </div>
+                )}
             </div>
 
+            {/* Smart Auto-Routing Toast */}
+            {toastMessage && (
+                <div className="p-3 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900/60 rounded-xl text-xs font-semibold text-blue-700 dark:text-blue-300 animate-fadeIn">
+                    {toastMessage}
+                </div>
+            )}
+
+            {/* Error & Unsupported File Redirect Banner */}
             {errorMessage && (
-                <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl text-xs text-red-700 dark:text-red-400 flex items-center justify-between">
-                    <span>{errorMessage}</span>
-                    {liveCredits !== null && liveCredits <= 0 && (
-                        <button
-                            onClick={redirectToILovePdf}
-                            title="Redirect to official iLovePDF website"
-                            className="underline font-bold text-red-800 dark:text-red-300 ml-2"
-                        >
-                            Go to iLovePDF →
-                        </button>
-                    )}
+                <div className="p-3.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl text-xs text-red-700 dark:text-red-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                    <span className="leading-relaxed">{errorMessage}</span>
+                    <button
+                        onClick={redirectToILovePdf}
+                        title="Open www.ilovepdf.com in a new tab"
+                        className="px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shrink-0 transition active:scale-95 shadow-xs"
+                    >
+                        Convert Other File Formats Here →
+                    </button>
                 </div>
             )}
 
@@ -232,7 +311,7 @@ export default function PdfConverter() {
                         setMode('image');
                         setErrorMessage('');
                     }}
-                    title="Convert JPG or PNG images into a PDF document"
+                    title="Convert JPG or PNG images into a PDF document (Unlimited)"
                     className={`py-2 text-xs font-bold rounded-lg transition ${
                         mode === 'image'
                             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
@@ -246,7 +325,7 @@ export default function PdfConverter() {
                         setMode('text');
                         setErrorMessage('');
                     }}
-                    title="Convert plain text directly into a PDF file"
+                    title="Convert plain text directly into a PDF file (Unlimited)"
                     className={`py-2 text-xs font-bold rounded-lg transition ${
                         mode === 'text'
                             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
@@ -268,11 +347,7 @@ export default function PdfConverter() {
                         <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">Supports .docx and .xlsx</span>
                         <input
                             type="file"
-                            accept=".docx, .xlsx, .xls"
-                            onChange={(e) => {
-                                setOfficeFile(e.target.files[0] || null);
-                                setErrorMessage('');
-                            }}
+                            onChange={(e) => handleSmartFileSelect(e.target.files)}
                             className="hidden"
                         />
                     </label>
@@ -297,11 +372,7 @@ export default function PdfConverter() {
                         <input
                             type="file"
                             multiple
-                            accept="image/png, image/jpeg"
-                            onChange={(e) => {
-                                setImages(Array.from(e.target.files));
-                                setErrorMessage('');
-                            }}
+                            onChange={(e) => handleSmartFileSelect(e.target.files)}
                             className="hidden"
                         />
                     </label>
@@ -331,16 +402,30 @@ export default function PdfConverter() {
             )}
 
             {mode === 'text' && (
-                <textarea
-                    title="Type or paste the full text content you wish to render into a PDF"
-                    className="w-full h-40 p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base resize-none text-gray-800 dark:text-gray-100 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-colors"
-                    placeholder="Enter text to convert into a PDF document..."
-                    value={textInput}
-                    onChange={(e) => {
-                        setTextInput(e.target.value);
-                        setErrorMessage('');
-                    }}
-                />
+                <div className="flex flex-col gap-3">
+                    <textarea
+                        title="Type or paste the full text content you wish to render into a PDF"
+                        className="w-full h-40 p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-base resize-none text-gray-800 dark:text-gray-100 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-colors"
+                        placeholder="Enter text to convert into a PDF document, or choose a text file below..."
+                        value={textInput}
+                        onChange={(e) => {
+                            setTextInput(e.target.value);
+                            setErrorMessage('');
+                        }}
+                    />
+
+                    <label
+                        title="Click to import content from a text file (.txt)"
+                        className="flex items-center justify-center p-2.5 bg-gray-50 dark:bg-slate-800/60 border border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800 transition"
+                    >
+                        <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">📄 Or upload a text file (.txt)</span>
+                        <input
+                            type="file"
+                            onChange={(e) => handleSmartFileSelect(e.target.files)}
+                            className="hidden"
+                        />
+                    </label>
+                </div>
             )}
 
             {/* Button Actions Group */}
@@ -353,7 +438,7 @@ export default function PdfConverter() {
                 >
                     {loading
                         ? 'Rendering Pixel-Perfect PDF...'
-                        : liveCredits !== null && liveCredits <= 0
+                        : mode === 'office' && liveCredits !== null && liveCredits <= 0
                             ? '0 Credits — Go to iLovePDF →'
                             : 'Convert & Download PDF'}
                 </button>
