@@ -50,8 +50,20 @@ export default function PdfConverter() {
         }
     };
 
-    const redirectToILovePdf = () => {
-        window.open('https://www.ilovepdf.com', '_blank', 'noopener,noreferrer');
+    // Helper to determine specific iLovePDF tool URL based on selected file
+    const getILovePdfUrl = (file = officeFile) => {
+        if (file) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (['xlsx', 'xls'].includes(ext) || file.type.includes('excel') || file.type.includes('spreadsheet')) {
+                return 'https://www.ilovepdf.com/excel_to_pdf';
+            }
+        }
+        return 'https://www.ilovepdf.com/word_to_pdf';
+    };
+
+    const redirectToILovePdf = (file = officeFile) => {
+        const targetUrl = getILovePdfUrl(file);
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
     };
 
     // Live credit fetcher
@@ -159,7 +171,8 @@ export default function PdfConverter() {
         }
 
         // 4. Unsupported file type
-        setErrorMessage(`"${firstFile.name}" is not supported here. For PowerPoint, video, PDF, or other files, please click the button.`);
+        const redirectUrl = getILovePdfUrl(firstFile);
+        setErrorMessage(`"${firstFile.name}" is not supported here. For PowerPoint, video, PDF, or other files, please use this link: ${redirectUrl.replace('https://', '')}`);
     };
 
     const downloadBlob = (blob, filename) => {
@@ -172,7 +185,7 @@ export default function PdfConverter() {
 
     const handleConvert = async () => {
         if (mode === 'office' && liveCredits !== null && liveCredits <= 0) {
-            redirectToILovePdf();
+            redirectToILovePdf(officeFile);
             return;
         }
 
@@ -244,7 +257,7 @@ export default function PdfConverter() {
                 {/* Only render live credits badge on Word / Excel mode */}
                 {mode === 'office' && (
                     <div
-                        title="Live credit balance for conversion of Word/Excel to pdf auto-syncing every 10 seconds"
+                        title="When credits reach 0, you will be redirected to an official page where you can continue converting your Word and/or Excel files."
                         className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer ${
                             fetchingCredits
                                 ? 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-700'
@@ -281,8 +294,8 @@ export default function PdfConverter() {
                 <div className="p-3.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl text-xs text-red-700 dark:text-red-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
                     <span className="leading-relaxed">{errorMessage}</span>
                     <button
-                        onClick={redirectToILovePdf}
-                        title="Open www.ilovepdf.com in a new tab"
+                        onClick={() => redirectToILovePdf(officeFile)}
+                        title={`Open ${getILovePdfUrl(officeFile)} in a new tab`}
                         className="px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shrink-0 transition active:scale-95 shadow-xs"
                     >
                         Convert Other File Formats Here →
@@ -445,9 +458,9 @@ export default function PdfConverter() {
 
                 {/* Professional Redirect Button */}
                 <button
-                    onClick={redirectToILovePdf}
+                    onClick={() => redirectToILovePdf(officeFile)}
                     type="button"
-                    title="Open official iLovePDF website in a new window"
+                    title={`Open ${getILovePdfUrl(officeFile)} in a new window`}
                     className="w-full py-3 border border-gray-200 dark:border-slate-700/80 bg-gray-50 dark:bg-slate-800/50 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-300 rounded-xl font-medium text-xs flex items-center justify-center gap-2 active:scale-95 transition"
                 >
                     <span>Visit Official Website for Converting other files to PDF</span>
