@@ -17,7 +17,6 @@ export default function PdfConverter() {
     const [history, setHistory] = useState([]);
     const [showHistory, setShowHistory] = useState(false);
 
-    // Fetch conversion history on load
     useEffect(() => {
         fetchHistory();
     }, []);
@@ -54,9 +53,9 @@ export default function PdfConverter() {
         window.open('https://www.ilovepdf.com', '_blank', 'noopener,noreferrer');
     };
 
-    // Fetch live remaining credit balance directly from iLoveAPI
-    const fetchLiveCredits = useCallback(async () => {
-        setFetchingCredits(true);
+    // Live credit fetcher with optional silent background updates
+    const fetchLiveCredits = useCallback(async (isInitial = false) => {
+        if (isInitial) setFetchingCredits(true);
         try {
             const res = await fetch('/api/credits');
             const data = await res.json();
@@ -69,12 +68,28 @@ export default function PdfConverter() {
         } catch (err) {
             console.error('Failed to fetch live credits:', err);
         } finally {
-            setFetchingCredits(false);
+            if (isInitial) setFetchingCredits(false);
         }
     }, []);
 
+    // 10-second polling interval + focus trigger for true real-time synchronization across multiple users
     useEffect(() => {
-        fetchLiveCredits();
+        fetchLiveCredits(true);
+
+        const interval = setInterval(() => {
+            fetchLiveCredits(false);
+        }, 10000); // Syncs live credits every 10 seconds
+
+        const handleFocus = () => {
+            fetchLiveCredits(false);
+        };
+
+        window.addEventListener('focus', handleFocus);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('focus', handleFocus);
+        };
     }, [fetchLiveCredits]);
 
     const downloadBlob = (blob, filename) => {
@@ -140,7 +155,7 @@ export default function PdfConverter() {
                 await saveToHistory(`Text Doc (${textInput.trim().substring(0, 20)}...)`, 'Text to PDF');
             }
 
-            fetchLiveCredits();
+            fetchLiveCredits(false);
         } catch (err) {
             console.error(err);
             setErrorMessage(`Conversion Error: ${err.message || 'Failed to process document.'}`);
@@ -157,7 +172,7 @@ export default function PdfConverter() {
                 </h2>
 
                 <div
-                    title="Live iLoveAPI credit balance for server-side Word & Excel conversion"
+                    title="Live iLoveAPI credit balance auto-syncing every 10 seconds"
                     className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer ${
                         fetchingCredits
                             ? 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-700'
