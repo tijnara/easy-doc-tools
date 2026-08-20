@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { convertImagesToPdf, convertTextToPdf } from '../lib/pdfUtils';
+import { supabase } from '../lib/supabase';
 
 export default function PdfConverter() {
     const [mode, setMode] = useState('office');
@@ -11,6 +12,43 @@ export default function PdfConverter() {
     const [errorMessage, setErrorMessage] = useState('');
     const [liveCredits, setLiveCredits] = useState(null);
     const [fetchingCredits, setFetchingCredits] = useState(true);
+
+    // History state
+    const [history, setHistory] = useState([]);
+    const [showHistory, setShowHistory] = useState(false);
+
+    // Fetch conversion history on load
+    useEffect(() => {
+        fetchHistory();
+    }, []);
+
+    const fetchHistory = async () => {
+        const { data, error } = await supabase
+            .from('pdf_conversion_history')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        if (!error && data) {
+            setHistory(data);
+        }
+    };
+
+    const saveToHistory = async (fileName, typeLabel) => {
+        const { data, error } = await supabase
+            .from('pdf_conversion_history')
+            .insert([
+                {
+                    file_name: fileName,
+                    conversion_type: typeLabel,
+                },
+            ])
+            .select();
+
+        if (!error && data) {
+            setHistory((prev) => [data[0], ...prev.slice(0, 9)]);
+        }
+    };
 
     const redirectToILovePdf = () => {
         window.open('https://www.ilovepdf.com', '_blank', 'noopener,noreferrer');
@@ -79,6 +117,8 @@ export default function PdfConverter() {
 
                 const pdfBlob = await response.blob();
                 downloadBlob(pdfBlob, `${officeFile.name.split('.')[0]}.pdf`);
+                await saveToHistory(officeFile.name, 'Office to PDF');
+
             } else if (mode === 'image') {
                 if (images.length === 0) {
                     setErrorMessage('Please select at least one image.');
@@ -87,6 +127,8 @@ export default function PdfConverter() {
                 }
                 const pdfBytes = await convertImagesToPdf(images);
                 downloadBlob(new Blob([pdfBytes], { type: 'application/pdf' }), 'converted-images.pdf');
+                await saveToHistory(`${images.length} Image(s)`, 'Image to PDF');
+
             } else {
                 if (!textInput.trim()) {
                     setErrorMessage('Type or paste text to convert.');
@@ -95,6 +137,7 @@ export default function PdfConverter() {
                 }
                 const pdfBytes = await convertTextToPdf(textInput);
                 downloadBlob(new Blob([pdfBytes], { type: 'application/pdf' }), 'converted-text.pdf');
+                await saveToHistory(`Text Doc (${textInput.trim().substring(0, 20)}...)`, 'Text to PDF');
             }
 
             fetchLiveCredits();
@@ -269,9 +312,47 @@ export default function PdfConverter() {
                 >
                     <span>Visit Official Website for Converting other files to PDF</span>
                     <svg className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
                 </button>
+            </div>
+
+            {/* History Drawer */}
+            <div className="mt-2 border-t pt-3 border-gray-100 dark:border-slate-800">
+                <button
+                    onClick={() => setShowHistory(!showHistory)}
+                    className="flex justify-between items-center w-full text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 uppercase tracking-wider py-1 transition"
+                >
+                    <span>Recent Conversions ({history.length}/10)</span>
+                    <span>{showHistory ? '▲ Hide' : '▼ Show'}</span>
+                </button>
+
+                {showHistory && (
+                    <div className="mt-2 space-y-2 max-h-56 overflow-y-auto pr-1">
+                        {history.length === 0 ? (
+                            <p className="text-xs text-gray-400 dark:text-gray-500 italic py-2">No conversions recorded yet.</p>
+                        ) : (
+                            history.map((item) => (
+                                <div
+                                    key={item.id}
+                                    className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-xl border border-gray-100 dark:border-slate-700/60 transition flex items-center justify-between"
+                                >
+                                    <div className="flex flex-col gap-0.5 truncate pr-2">
+                                        <span className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">
+                                            📄 {item.file_name}
+                                        </span>
+                                        <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                                            {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-900/50 shrink-0">
+                                        {item.conversion_type}
+                                    </span>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );
