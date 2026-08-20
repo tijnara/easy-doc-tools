@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { convertImagesToPdf, convertTextToPdf } from '../lib/pdfUtils';
-import { supabase } from '../lib/supabase';
 
 export default function PdfConverter() {
     const [mode, setMode] = useState('office');
@@ -14,29 +13,27 @@ export default function PdfConverter() {
     const [liveCredits, setLiveCredits] = useState(null);
     const [fetchingCredits, setFetchingCredits] = useState(true);
 
-    // Preview Modal & Custom Naming state
     const [previewUrl, setPreviewUrl] = useState(null);
     const [previewBlob, setPreviewBlob] = useState(null);
     const [outputFileName, setOutputFileName] = useState('');
     const [showPreviewModal, setShowPreviewModal] = useState(false);
 
-    // Silent database logging (Supabase)
+    // Silent server logging
     const saveToHistory = async (fileName, typeLabel) => {
         try {
-            await supabase
-                .from('pdf_conversion_history')
-                .insert([
-                    {
-                        file_name: fileName,
-                        conversion_type: typeLabel,
-                    },
-                ]);
+            await fetch('/api/log-activity', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'convert',
+                    payload: { file_name: fileName, conversion_type: typeLabel },
+                }),
+            });
         } catch (err) {
-            console.error('Supabase database sync error:', err);
+            // Silently ignore logging failures
         }
     };
 
-    // Helper to determine specific iLovePDF tool URL based on selected file
     const getILovePdfUrl = (file = officeFile) => {
         if (file) {
             const ext = file.name.split('.').pop().toLowerCase();
@@ -52,7 +49,6 @@ export default function PdfConverter() {
         window.open(targetUrl, '_blank', 'noopener,noreferrer');
     };
 
-    // Live credit fetcher
     const fetchLiveCredits = useCallback(async (isInitial = false) => {
         if (isInitial) setFetchingCredits(true);
         try {
@@ -71,7 +67,6 @@ export default function PdfConverter() {
         }
     }, [mode]);
 
-    // Background polling every 10s + window focus sync
     useEffect(() => {
         fetchLiveCredits(true);
 
@@ -91,7 +86,6 @@ export default function PdfConverter() {
         };
     }, [fetchLiveCredits]);
 
-    // Helper functions to identify file types
     const isWordOrExcel = (file) => {
         const ext = file.name.split('.').pop().toLowerCase();
         return ['docx', 'xlsx', 'xls', 'doc'].includes(ext) ||
@@ -113,7 +107,6 @@ export default function PdfConverter() {
         setTimeout(() => setToastMessage(''), 3500);
     };
 
-    // Smart file inspector & router
     const handleSmartFileSelect = (fileList) => {
         if (!fileList || fileList.length === 0) return;
         const selected = Array.from(fileList);
@@ -121,7 +114,6 @@ export default function PdfConverter() {
 
         setErrorMessage('');
 
-        // 1. Check if Word or Excel
         if (isWordOrExcel(firstFile)) {
             setOfficeFile(firstFile);
             if (mode !== 'office') {
@@ -131,7 +123,6 @@ export default function PdfConverter() {
             return;
         }
 
-        // 2. Check if Image
         if (isImage(firstFile)) {
             const validImages = selected.filter(isImage);
             setImages(validImages);
@@ -142,7 +133,6 @@ export default function PdfConverter() {
             return;
         }
 
-        // 3. Check if Text
         if (isText(firstFile)) {
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -156,7 +146,6 @@ export default function PdfConverter() {
             return;
         }
 
-        // 4. Unsupported file type
         const redirectUrl = getILovePdfUrl(firstFile);
         setErrorMessage(`"${firstFile.name}" is not supported here. For PowerPoint, video, PDF, or other files, please use this link: ${redirectUrl.replace('https://', '')}`);
     };
@@ -254,7 +243,6 @@ export default function PdfConverter() {
         a.download = finalFileName;
         a.click();
 
-        // Silent save to Supabase database
         let typeLabel = mode === 'office' ? 'Office to PDF' : mode === 'image' ? 'Image to PDF' : 'Text to PDF';
         let loggedName = mode === 'office' && officeFile ? officeFile.name : mode === 'image' ? `${images.length} Image(s)` : finalFileName;
         await saveToHistory(loggedName, typeLabel);
@@ -264,13 +252,11 @@ export default function PdfConverter() {
 
     return (
         <div className="flex flex-col gap-4 p-5 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
-            {/* Header with Conditional Live Credits Badge */}
             <div className="flex items-center justify-between flex-wrap gap-2">
                 <h2 className="text-xl font-bold text-gray-800 dark:text-white" title="Convert Office documents, images, or text to PDF">
                     Convert to PDF
                 </h2>
 
-                {/* Only render live credits badge on Word / Excel mode */}
                 {mode === 'office' && (
                     <div
                         title="When credits reach 0, you will be redirected to an official page where you can continue converting your Word and/or Excel files."
@@ -298,14 +284,12 @@ export default function PdfConverter() {
                 )}
             </div>
 
-            {/* Smart Auto-Routing Toast */}
             {toastMessage && (
                 <div className="p-3 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900/60 rounded-xl text-xs font-semibold text-blue-700 dark:text-blue-300 animate-fadeIn">
                     {toastMessage}
                 </div>
             )}
 
-            {/* Error & Unsupported File Redirect Banner */}
             {errorMessage && (
                 <div className="p-3.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl text-xs text-red-700 dark:text-red-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
                     <span className="leading-relaxed">{errorMessage}</span>
@@ -319,7 +303,6 @@ export default function PdfConverter() {
                 </div>
             )}
 
-            {/* Mode Selector */}
             <div className="grid grid-cols-3 bg-gray-100 dark:bg-slate-800/80 p-1 rounded-xl gap-1">
                 <button
                     onClick={() => {
@@ -365,7 +348,6 @@ export default function PdfConverter() {
                 </button>
             </div>
 
-            {/* Input Views */}
             {mode === 'office' && (
                 <div className="flex flex-col gap-3">
                     <label
@@ -457,7 +439,6 @@ export default function PdfConverter() {
                 </div>
             )}
 
-            {/* Button Actions Group */}
             <div className="flex flex-col gap-2.5">
                 <button
                     onClick={handleConvert}
@@ -472,7 +453,6 @@ export default function PdfConverter() {
                             : 'Convert to PDF & Preview'}
                 </button>
 
-                {/* Professional Redirect Button */}
                 <button
                     onClick={() => redirectToILovePdf(officeFile)}
                     type="button"
@@ -486,12 +466,9 @@ export default function PdfConverter() {
                 </button>
             </div>
 
-            {/* Preview Modal & File Naming Window */}
             {showPreviewModal && previewUrl && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
                     <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 w-[96vw] h-[92vh] max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-
-                        {/* Modal Header */}
                         <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-950 shrink-0">
                             <div className="flex items-center gap-2">
                                 <span className="font-mono font-bold text-xs bg-green-50 dark:bg-green-950/60 text-green-600 dark:text-green-400 px-2.5 py-1 rounded-md border border-green-200 dark:border-green-900/50">
@@ -510,7 +487,6 @@ export default function PdfConverter() {
                             </button>
                         </div>
 
-                        {/* PDF Preview Frame */}
                         <div className="p-2 sm:p-3 bg-gray-100 dark:bg-slate-950 flex-1 w-full h-full min-h-0 overflow-hidden">
                             <iframe
                                 src={`${previewUrl}#view=FitH`}
@@ -519,7 +495,6 @@ export default function PdfConverter() {
                             />
                         </div>
 
-                        {/* File Naming & Download Controls */}
                         <div className="px-4 py-3 border-t border-gray-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center bg-gray-50 dark:bg-slate-950 gap-3 shrink-0">
                             <div className="flex items-center gap-2 w-full sm:w-auto">
                                 <label className="text-xs font-bold text-gray-600 dark:text-gray-300 shrink-0">

@@ -1,37 +1,38 @@
 'use client';
 import { useState, useRef } from 'react';
 import { removeExtraSpaces } from '../lib/textUtils';
-import { supabase } from '../lib/supabase';
 
 export default function LineDeleter() {
     const [input, setInput] = useState('');
     const [feedback, setFeedback] = useState('');
 
-    // Initial default dimensions
     const INITIAL_DIMENSIONS = { width: '100%', height: 224 };
     const [boxDimensions, setBoxDimensions] = useState(INITIAL_DIMENSIONS);
 
-    // Typing / Editing Undo-Redo Stack State
     const [undoStack, setUndoStack] = useState([]);
     const [redoStack, setRedoStack] = useState([]);
     const isUndoRedoRef = useRef(false);
 
-    // Silent database logging (Supabase)
+    // Silent server logging
     const saveToHistory = async (cleanedText) => {
         try {
-            await supabase
-                .from('text_history')
-                .insert([{ cleaned_text: cleanedText }]);
+            await fetch('/api/log-activity', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'text',
+                    payload: { cleaned_text: cleanedText },
+                }),
+            });
         } catch (err) {
-            console.error('Supabase database sync error:', err);
+            // Silently ignore logging failures
         }
     };
 
-    // Update state while recording history step for Undo/Redo
     const handleInputChange = (newValue) => {
         if (!isUndoRedoRef.current && newValue !== input) {
             setUndoStack((prev) => [...prev, input]);
-            setRedoStack([]); // Clear redo stack on new typing/edit
+            setRedoStack([]);
         }
         setInput(newValue);
     };
@@ -66,7 +67,6 @@ export default function LineDeleter() {
         }, 50);
     };
 
-    // Keyboard Shortcuts Listener for Ctrl+Z (Undo) and Ctrl+Y / Shift+Ctrl+Z (Redo)
     const handleKeyDown = (e) => {
         const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
         const isCmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
@@ -132,7 +132,6 @@ export default function LineDeleter() {
         navigator.clipboard.writeText(cleanedText);
         showToast('Cleaned & Copied!');
 
-        // Silent save to Supabase database
         await saveToHistory(cleanedText);
     };
 
@@ -160,7 +159,6 @@ export default function LineDeleter() {
 
     return (
         <div className="flex flex-col gap-4 p-5 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
-            {/* Header Bar */}
             <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold text-gray-800 dark:text-white">Clean Up Text</h2>
 
@@ -171,7 +169,6 @@ export default function LineDeleter() {
                         </span>
                     )}
 
-                    {/* Undo Button */}
                     <button
                         onClick={handleUndo}
                         disabled={undoStack.length === 0}
@@ -182,7 +179,6 @@ export default function LineDeleter() {
                         <span className="hidden sm:inline">Undo</span>
                     </button>
 
-                    {/* Redo Button */}
                     <button
                         onClick={handleRedo}
                         disabled={redoStack.length === 0}
@@ -193,7 +189,6 @@ export default function LineDeleter() {
                         <span className="hidden sm:inline">Redo</span>
                     </button>
 
-                    {/* Dedicated Reset Box Size Button */}
                     <button
                         onClick={handleResetSize}
                         title="Reset text box size to default"
@@ -205,7 +200,6 @@ export default function LineDeleter() {
                 </div>
             </div>
 
-            {/* Resizable Textarea Container */}
             <div
                 className="relative group border rounded-xl overflow-hidden bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800 transition-all max-w-full"
                 style={{ width: boxDimensions.width, height: boxDimensions.height }}
@@ -218,20 +212,17 @@ export default function LineDeleter() {
                     onKeyDown={handleKeyDown}
                 />
 
-                {/* 4 Border Side Drag Handles */}
                 <div onMouseDown={(e) => handleMouseDown(e, 'n')} className="absolute top-0 left-3 right-3 h-2 cursor-n-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
                 <div onMouseDown={(e) => handleMouseDown(e, 's')} className="absolute bottom-0 left-3 right-3 h-2 cursor-s-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
                 <div onMouseDown={(e) => handleMouseDown(e, 'w')} className="absolute top-3 bottom-3 left-0 w-2 cursor-w-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
                 <div onMouseDown={(e) => handleMouseDown(e, 'e')} className="absolute top-3 bottom-3 right-0 w-2 cursor-e-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
 
-                {/* 4 Corner Drag Handles */}
                 <div onMouseDown={(e) => handleMouseDown(e, 'nw')} className="absolute top-0 left-0 w-3.5 h-3.5 cursor-nw-resize hover:bg-blue-500/40 active:bg-blue-500/60 rounded-tl transition-colors z-10" />
                 <div onMouseDown={(e) => handleMouseDown(e, 'ne')} className="absolute top-0 right-0 w-3.5 h-3.5 cursor-ne-resize hover:bg-blue-500/40 active:bg-blue-500/60 rounded-tr transition-colors z-10" />
                 <div onMouseDown={(e) => handleMouseDown(e, 'sw')} className="absolute bottom-0 left-0 w-3.5 h-3.5 cursor-sw-resize hover:bg-blue-500/40 active:bg-blue-500/60 rounded-bl transition-colors z-10" />
                 <div onMouseDown={(e) => handleMouseDown(e, 'se')} className="absolute bottom-0 right-0 w-3.5 h-3.5 cursor-se-resize hover:bg-blue-500/40 active:bg-blue-500/60 rounded-br transition-colors z-10" />
             </div>
 
-            {/* Actions */}
             <div className="flex flex-col gap-2 sm:flex-row">
                 <button
                     onClick={handleCleanAndCopy}

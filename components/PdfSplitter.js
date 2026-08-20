@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import { splitPdfPages, getPdfPageCount } from '../lib/pdfUtils';
-import { supabase } from '../lib/supabase';
 
 export default function PdfSplitter() {
     const [file, setFile] = useState(null);
@@ -11,20 +10,24 @@ export default function PdfSplitter() {
     const [errorMessage, setErrorMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
 
-    // Preview Modal & Custom Naming state
     const [previewUrl, setPreviewUrl] = useState(null);
     const [previewBlob, setPreviewBlob] = useState(null);
     const [outputFileName, setOutputFileName] = useState('');
     const [showPreviewModal, setShowPreviewModal] = useState(false);
 
-    // Silent database logging (Supabase)
+    // Silent server logging
     const saveToHistory = async (fileName, rangeStr) => {
         try {
-            await supabase
-                .from('pdf_split_history')
-                .insert([{ file_name: fileName, split_range: rangeStr }]);
+            await fetch('/api/log-activity', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'split',
+                    payload: { file_name: fileName, split_range: rangeStr },
+                }),
+            });
         } catch (err) {
-            console.error('Supabase database sync error:', err);
+            // Silently ignore logging failures
         }
     };
 
@@ -118,9 +121,7 @@ export default function PdfSplitter() {
         a.download = finalFileName;
         a.click();
 
-        // Silent save to Supabase database
         await saveToHistory(file ? file.name : finalFileName, rangeInput);
-
         handleClosePreview();
     };
 
@@ -142,7 +143,6 @@ export default function PdfSplitter() {
                 </div>
             )}
 
-            {/* Page Range Input Controls */}
             <div className="flex flex-col gap-2 pt-1">
                 <div className="flex justify-between items-center">
                     <label className="text-xs font-bold text-gray-600 dark:text-gray-300">
@@ -163,7 +163,6 @@ export default function PdfSplitter() {
                     className="p-2.5 border rounded-xl text-xs font-mono font-bold text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                 />
 
-                {/* Preset Shortcut Badges */}
                 <div className="flex flex-wrap gap-1.5 pt-1">
                     <button
                         type="button"
@@ -184,7 +183,6 @@ export default function PdfSplitter() {
                 </div>
             </div>
 
-            {/* File Upload Selector */}
             <label
                 title="Click to select a PDF file to split"
                 className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50 transition mt-1"
@@ -203,7 +201,6 @@ export default function PdfSplitter() {
                 />
             </label>
 
-            {/* Selected File Details */}
             {file && (
                 <div
                     title={`Full Filename: ${file.name}\nSize: ${(file.size / 1024).toFixed(1)} KB`}
@@ -230,7 +227,6 @@ export default function PdfSplitter() {
                 </div>
             )}
 
-            {/* Action Button */}
             <button
                 onClick={handleSplitPdf}
                 disabled={loading || !file}
@@ -242,12 +238,9 @@ export default function PdfSplitter() {
                     : `Extract Pages (${rangeInput})`}
             </button>
 
-            {/* Preview Modal & File Naming Window */}
             {showPreviewModal && previewUrl && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
                     <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 w-[96vw] h-[92vh] max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-
-                        {/* Modal Header */}
                         <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-950 shrink-0">
                             <div className="flex items-center gap-2">
                                 <span className="font-mono font-bold text-xs bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-md border border-blue-200 dark:border-blue-900/50">
@@ -266,7 +259,6 @@ export default function PdfSplitter() {
                             </button>
                         </div>
 
-                        {/* PDF Preview Frame */}
                         <div className="p-2 sm:p-3 bg-gray-100 dark:bg-slate-950 flex-1 w-full h-full min-h-0 overflow-hidden">
                             <iframe
                                 src={`${previewUrl}#view=FitH`}
@@ -275,7 +267,6 @@ export default function PdfSplitter() {
                             />
                         </div>
 
-                        {/* File Naming & Download Controls */}
                         <div className="px-4 py-3 border-t border-gray-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center bg-gray-50 dark:bg-slate-950 gap-3 shrink-0">
                             <div className="flex items-center gap-2 w-full sm:w-auto">
                                 <label className="text-xs font-bold text-gray-600 dark:text-gray-300 shrink-0">

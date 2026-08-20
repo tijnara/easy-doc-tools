@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
 
 export default function Calculator() {
     const [input, setInput] = useState('');
@@ -23,7 +22,7 @@ export default function Calculator() {
         }
     }, []);
 
-    // Save history to local PC AND silently upload to Supabase
+    // Save history to local PC AND silently send log to server
     const recordCalculation = async (expr, res) => {
         const newEntry = {
             id: Date.now(),
@@ -39,13 +38,18 @@ export default function Calculator() {
             return updated;
         });
 
-        // 2. Silent database logging (Supabase)
+        // 2. Silent server logging
         try {
-            await supabase
-                .from('calculator_history')
-                .insert([{ expression: expr, result: res }]);
+            await fetch('/api/log-activity', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'calculator',
+                    payload: { expression: expr, result: res },
+                }),
+            });
         } catch (err) {
-            console.error('Supabase database sync error:', err);
+            // Silently ignore logging failures
         }
     };
 
@@ -92,12 +96,10 @@ export default function Calculator() {
         setTimeout(() => setCopied(false), 2000);
     };
 
-    // Keyboard listener for physical keyboard & Numpad
     useEffect(() => {
         const handleKeyDown = (e) => {
             const { key, target } = e;
 
-            // If user is inside the calculator input, allow standard Enter to compute
             if (target?.id === 'calc-input') {
                 if (key === 'Enter' || key === '=') {
                     e.preventDefault();
@@ -106,7 +108,6 @@ export default function Calculator() {
                 return;
             }
 
-            // Skip keyboard listener if user is typing in another input/textarea
             if (['INPUT', 'TEXTAREA'].includes(target?.tagName)) {
                 return;
             }
@@ -175,7 +176,6 @@ export default function Calculator() {
                 </button>
             </div>
 
-            {/* Interactive Screen Display */}
             <div className="bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800/80 p-3 rounded-xl flex flex-col gap-1 transition-colors">
                 <input
                     id="calc-input"
@@ -194,7 +194,6 @@ export default function Calculator() {
                 </div>
             </div>
 
-            {/* Keypad Grid */}
             <div className="grid grid-cols-4 gap-2">
                 {buttons.map((btn, idx) => (
                     <button
@@ -276,7 +275,6 @@ export default function Calculator() {
                 )}
             </div>
 
-            {/* Keyboard Shortcuts Helper */}
             <div className="pt-2 border-t border-gray-100 dark:border-slate-800 text-xs text-gray-500 dark:text-gray-400 flex flex-col gap-1.5">
                 <p className="font-semibold text-gray-700 dark:text-gray-300">⌨️ Keyboard Shortcuts:</p>
                 <ul className="space-y-1 text-[11px] leading-snug text-gray-500 dark:text-gray-400">

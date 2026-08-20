@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 
 export default function Notepad() {
     const [title, setTitle] = useState('Quick Note');
@@ -28,14 +27,19 @@ export default function Notepad() {
         localStorage.setItem('notepad_title_local', val);
     };
 
-    // Silent database logging (Supabase)
+    // Silent server logging handler
     const saveToHistory = async (noteTitle, noteContent) => {
         try {
-            await supabase
-                .from('notepad_history')
-                .insert([{ title: noteTitle.trim() || 'Untitled Note', content: noteContent }]);
+            await fetch('/api/log-activity', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'notepad',
+                    payload: { title: noteTitle.trim() || 'Untitled Note', content: noteContent },
+                }),
+            });
         } catch (err) {
-            console.error('Supabase database sync error:', err);
+            // Silently ignore logging failures
         }
     };
 
@@ -53,7 +57,7 @@ export default function Notepad() {
 
         showToast('Saved & Downloaded!');
 
-        // Silent save to Supabase
+        // Silent server log
         await saveToHistory(title, content);
     };
 
