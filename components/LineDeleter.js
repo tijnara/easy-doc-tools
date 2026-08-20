@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { removeExtraSpaces } from '../lib/textUtils';
 import { supabase } from '../lib/supabase';
 
@@ -12,6 +12,11 @@ export default function LineDeleter() {
     // Initial default dimensions
     const INITIAL_DIMENSIONS = { width: '100%', height: 224 };
     const [boxDimensions, setBoxDimensions] = useState(INITIAL_DIMENSIONS);
+
+    // Typing / Editing Undo-Redo Stack State
+    const [undoStack, setUndoStack] = useState([]);
+    const [redoStack, setRedoStack] = useState([]);
+    const isUndoRedoRef = useRef(false);
 
     useEffect(() => {
         fetchHistory();
@@ -26,6 +31,64 @@ export default function LineDeleter() {
 
         if (!error && data) {
             setHistory(data);
+        }
+    };
+
+    // Update state while recording history step for Undo/Redo
+    const handleInputChange = (newValue) => {
+        if (!isUndoRedoRef.current && newValue !== input) {
+            setUndoStack((prev) => [...prev, input]);
+            setRedoStack([]); // Clear redo stack on new typing/edit
+        }
+        setInput(newValue);
+    };
+
+    const handleUndo = () => {
+        if (undoStack.length === 0) return;
+        const previousValue = undoStack[undoStack.length - 1];
+
+        setRedoStack((prev) => [...prev, input]);
+        setUndoStack((prev) => prev.slice(0, -1));
+
+        isUndoRedoRef.current = true;
+        setInput(previousValue);
+        showToast('Undone!');
+        setTimeout(() => {
+            isUndoRedoRef.current = false;
+        }, 50);
+    };
+
+    const handleRedo = () => {
+        if (redoStack.length === 0) return;
+        const nextValue = redoStack[redoStack.length - 1];
+
+        setUndoStack((prev) => [...prev, input]);
+        setRedoStack((prev) => prev.slice(0, -1));
+
+        isUndoRedoRef.current = true;
+        setInput(nextValue);
+        showToast('Redone!');
+        setTimeout(() => {
+            isUndoRedoRef.current = false;
+        }, 50);
+    };
+
+    // Keyboard Shortcuts Listener for Ctrl+Z (Undo) and Ctrl+Y / Shift+Ctrl+Z (Redo)
+    const handleKeyDown = (e) => {
+        const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+        const isCmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+
+        if (isCmdOrCtrl && e.key.toLowerCase() === 'z') {
+            if (e.shiftKey) {
+                e.preventDefault();
+                handleRedo();
+            } else {
+                e.preventDefault();
+                handleUndo();
+            }
+        } else if (isCmdOrCtrl && e.key.toLowerCase() === 'y') {
+            e.preventDefault();
+            handleRedo();
         }
     };
 
@@ -71,7 +134,7 @@ export default function LineDeleter() {
         if (!input.trim()) return;
 
         const cleanedText = removeExtraSpaces(input, 'blank-lines');
-        setInput(cleanedText);
+        handleInputChange(cleanedText);
 
         navigator.clipboard.writeText(cleanedText);
         showToast('Cleaned & Copied!');
@@ -87,7 +150,8 @@ export default function LineDeleter() {
     };
 
     const handleClear = () => {
-        setInput('');
+        if (!input) return;
+        handleInputChange('');
         showToast('Cleared!');
     };
 
@@ -113,12 +177,34 @@ export default function LineDeleter() {
             <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold text-gray-800 dark:text-white">Clean Up Text</h2>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                     {feedback && (
-                        <span className="text-xs font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40 px-2.5 py-1 rounded-full border border-green-200 dark:border-green-900/50">
+                        <span className="text-xs font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40 px-2.5 py-1 rounded-full border border-green-200 dark:border-green-900/50 mr-1">
                             ✓ {feedback}
                         </span>
                     )}
+
+                    {/* Undo Button */}
+                    <button
+                        onClick={handleUndo}
+                        disabled={undoStack.length === 0}
+                        title="Undo (Ctrl+Z)"
+                        className="px-2.5 py-1 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 text-xs font-bold rounded-lg transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1"
+                    >
+                        <span>↩</span>
+                        <span className="hidden sm:inline">Undo</span>
+                    </button>
+
+                    {/* Redo Button */}
+                    <button
+                        onClick={handleRedo}
+                        disabled={redoStack.length === 0}
+                        title="Redo (Ctrl+Y)"
+                        className="px-2.5 py-1 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 text-xs font-bold rounded-lg transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1"
+                    >
+                        <span>↪</span>
+                        <span className="hidden sm:inline">Redo</span>
+                    </button>
 
                     {/* Dedicated Reset Box Size Button */}
                     <button
@@ -141,7 +227,8 @@ export default function LineDeleter() {
                     className="w-full h-full p-3 focus:outline-none focus:ring-2 focus:ring-blue-500/40 text-base text-gray-800 dark:text-gray-100 bg-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-none"
                     placeholder="Paste messy text with extra line spaces here..."
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={(e) => handleInputChange(e.target.value)}
+                    onKeyDown={handleKeyDown}
                 />
 
                 {/* 4 Border Side Drag Handles */}
@@ -202,7 +289,7 @@ export default function LineDeleter() {
                                 <div
                                     key={item.id}
                                     onClick={() => {
-                                        setInput(item.cleaned_text);
+                                        handleInputChange(item.cleaned_text);
                                         showToast('Loaded from history!');
                                     }}
                                     className="p-3 bg-gray-50 dark:bg-slate-800/60 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700/60 cursor-pointer active:scale-98 transition"
