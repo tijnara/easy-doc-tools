@@ -1,6 +1,7 @@
 import './globals.css';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/react';
+import ActiveHeartbeat from '@/components/ActiveHeartbeat';
 
 export const viewport = {
     themeColor: '#090114',
@@ -31,6 +32,7 @@ export default function RootLayout({ children }) {
         <html lang="en">
         <body className="bg-slate-50 dark:bg-slate-950 text-gray-900 dark:text-gray-100 transition-colors duration-300">
         {children}
+        <ActiveHeartbeat />
         <SpeedInsights />
         <Analytics />
         </body>
