@@ -88,8 +88,12 @@ export default function LineDeleter() {
 
     const handleClear = () => {
         setInput('');
-        setBoxDimensions(INITIAL_DIMENSIONS); // Resets box size to default on clear
         showToast('Cleared!');
+    };
+
+    const handleResetSize = () => {
+        setBoxDimensions(INITIAL_DIMENSIONS);
+        showToast('Box size reset!');
     };
 
     const handleCopyOnly = () => {
@@ -105,13 +109,27 @@ export default function LineDeleter() {
 
     return (
         <div className="flex flex-col gap-4 p-5 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
+            {/* Header Bar */}
             <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold text-gray-800 dark:text-white">Clean Up Text</h2>
-                {feedback && (
-                    <span className="text-xs font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40 px-2.5 py-1 rounded-full border border-green-200 dark:border-green-900/50">
-                        ✓ {feedback}
-                    </span>
-                )}
+
+                <div className="flex items-center gap-2">
+                    {feedback && (
+                        <span className="text-xs font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40 px-2.5 py-1 rounded-full border border-green-200 dark:border-green-900/50">
+                            ✓ {feedback}
+                        </span>
+                    )}
+
+                    {/* Dedicated Reset Box Size Button */}
+                    <button
+                        onClick={handleResetSize}
+                        title="Reset text box size to default"
+                        className="px-2.5 py-1 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 text-xs font-bold rounded-lg transition flex items-center gap-1"
+                    >
+                        <span>📐</span>
+                        <span className="hidden sm:inline">Reset Size</span>
+                    </button>
+                </div>
             </div>
 
             {/* Resizable Textarea Container */}
