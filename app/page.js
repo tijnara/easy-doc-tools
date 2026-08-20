@@ -4,6 +4,7 @@ import SplashScreen from '@/components/SplashScreen';
 import LineDeleter from '@/components/LineDeleter';
 import PdfConverter from '@/components/PdfConverter';
 import PdfMerger from '@/components/PdfMerger';
+import PdfSplitter from '@/components/PdfSplitter';
 import DueDateCalculator from '@/components/DueDateCalculator';
 import Calculator from '@/components/Calculator';
 
@@ -108,8 +109,8 @@ export default function Home() {
 
                         {/* Document & Due Date Tools Section */}
                         <div className="order-2 lg:order-1 lg:col-span-7 flex flex-col gap-4">
-                            {/* Tool Navigation Tabs (4 Tabs) */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1">
+                            {/* Tool Navigation Tabs (5 Tabs) */}
+                            <div className="grid grid-cols-2 sm:grid-cols-5 bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1">
                                 <button
                                     onClick={() => setActiveTab('cleaner')}
                                     className={`py-2.5 text-xs font-bold rounded-xl transition ${
@@ -141,6 +142,16 @@ export default function Home() {
                                     Merge
                                 </button>
                                 <button
+                                    onClick={() => setActiveTab('splitpdf')}
+                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                        activeTab === 'splitpdf'
+                                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                    }`}
+                                >
+                                    Split PDF
+                                </button>
+                                <button
                                     onClick={() => setActiveTab('duedate')}
                                     className={`py-2.5 text-xs font-bold rounded-xl transition ${
                                         activeTab === 'duedate'
@@ -156,6 +167,7 @@ export default function Home() {
                             {activeTab === 'cleaner' && <LineDeleter />}
                             {activeTab === 'converter' && <PdfConverter />}
                             {activeTab === 'merger' && <PdfMerger />}
+                            {activeTab === 'splitpdf' && <PdfSplitter />}
                             {activeTab === 'duedate' && <DueDateCalculator />}
                         </div>
 
@@ -192,9 +204,9 @@ export default function Home() {
 
                 {/* Corner Watermark Badge */}
                 <div className="fixed bottom-3 right-4 pointer-events-none opacity-40 hover:opacity-100 transition-opacity hidden sm:block">
-          <span className="text-[10px] font-mono tracking-widest uppercase text-gray-400 dark:text-gray-500 select-none">
-            Author: tijnara
-          </span>
+                    <span className="text-[10px] font-mono tracking-widest uppercase text-gray-400 dark:text-gray-500 select-none">
+                        Author: tijnara
+                    </span>
                 </div>
             </main>
         </div>
