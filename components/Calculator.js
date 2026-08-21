@@ -95,22 +95,32 @@ export default function Calculator() {
         }
     }, [input]);
 
-    const handleCopyResult = () => {
+    const handleCopyResult = useCallback(() => {
         const textToCopy = result !== '' ? result : input;
         if (!textToCopy) return;
 
         navigator.clipboard.writeText(textToCopy);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
-
-        // Wipe both the calculator input field AND the result display for next calculations
-        setInput('');
-        setResult('');
-    };
+    }, [result, input]);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
             const { key, target } = e;
+            const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+            const isCmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+
+            // Handle Ctrl+C or Cmd+C to copy result without clearing fields
+            if (isCmdOrCtrl && key.toLowerCase() === 'c') {
+                if (target?.id === 'calc-input' && window.getSelection().toString()) {
+                    return; // Allow standard highlight copying if text in input is selected
+                }
+                if (!['INPUT', 'TEXTAREA'].includes(target?.tagName) || target?.id === 'calc-input') {
+                    e.preventDefault();
+                    handleCopyResult();
+                    return;
+                }
+            }
 
             if (target?.id === 'calc-input') {
                 if (key === 'Enter' || key === '=') {
@@ -142,14 +152,14 @@ export default function Calculator() {
                 handleCalculate();
             } else if (key === 'Backspace') {
                 handleDelete();
-            } else if (key === 'Escape' || key.toLowerCase() === 'c') {
+            } else if (key === 'Escape' || (key.toLowerCase() === 'c' && !isCmdOrCtrl)) {
                 handleClear();
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [handleClick, handleClear, handleDelete, handleCalculate]);
+    }, [handleClick, handleClear, handleDelete, handleCalculate, handleCopyResult]);
 
     const buttons = [
         { label: 'C', onClick: handleClear, type: 'action', title: 'Clear screen (Esc / C)' },
@@ -181,10 +191,10 @@ export default function Calculator() {
                 </h2>
                 <button
                     onClick={handleCopyResult}
-                    title="Copy current result or input value to clipboard and clear calculator"
+                    title="Copy current result or input value to clipboard (Ctrl+C)"
                     className="px-3 py-1 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-lg transition"
                 >
-                    {copied ? '✓ Copied & Cleared!' : '📋 Copy Result'}
+                    {copied ? '✓ Copied!' : '📋 Copy Result'}
                 </button>
             </div>
 
@@ -291,6 +301,7 @@ export default function Calculator() {
                 <p className="font-semibold text-gray-700 dark:text-gray-300">⌨️ Keyboard Shortcuts:</p>
                 <ul className="space-y-1 text-[11px] leading-snug text-gray-500 dark:text-gray-400">
                     <li><span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">Enter</span> or <span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1 py-0.5 rounded border border-gray-200 dark:border-slate-700">=</span> : Computes expression</li>
+                    <li><span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">Ctrl+C</span> : Copies result to clipboard</li>
                     <li><span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">Backspace</span> : Deletes character</li>
                     <li><span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">Esc</span> or <span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">C</span> : Clears screen</li>
                 </ul>
