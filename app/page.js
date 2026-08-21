@@ -269,8 +269,8 @@ export default function Home() {
                     {/* Header */}
                     <div className="flex flex-col items-center justify-center text-center">
                         <div className="flex items-center gap-3 mb-1">
-                            <div className="w-10 h-10 bg-purple-950 p-1.5 rounded-xl flex items-center justify-center shadow-md shadow-purple-900/20 border border-purple-800">
-                                <svg className="w-full h-full" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <div className="w-10 h-10 bg-purple-950 p-1.5 rounded-xl flex items-center justify-center shadow-md shadow-purple-900/20 border border-purple-800 group cursor-pointer">
+                                <svg className="w-full h-full transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <defs>
                                         <linearGradient id="headerGoldWing" x1="0%" y1="0%" x2="100%" y2="100%">
                                             <stop offset="0%" stopColor="#ffffff" />
@@ -293,7 +293,7 @@ export default function Home() {
                                     <line x1="16" y1="4" x2="16" y2="27" stroke="#ffffff" strokeWidth="0.8" opacity="0.8" />
                                     <line x1="16" y1="4" x2="10.5" y2="20.5" stroke="#e0e7ff" strokeWidth="0.6" opacity="0.7" />
                                     <line x1="16" y1="4" x2="21.5" y2="20.5" stroke="#d97706" strokeWidth="0.6" opacity="0.7" />
-                                    <circle cx="16" cy="27" r="1.2" fill="#fbbf24" />
+                                    <circle cx="16" cy="27" r="1.2" fill="#fbbf24" className="animate-ping" />
                                 </svg>
                             </div>
                             <h1 className="text-3xl font-extrabold tracking-tight">Workspace Kit</h1>
@@ -380,12 +380,16 @@ export default function Home() {
                 {/* Footer Author Badge */}
                 <footer className="mt-12 text-center text-xs font-medium flex items-center justify-center">
                     <div
-                        className="inline-flex items-center gap-1.5 bg-white dark:bg-slate-900 px-4 py-2 rounded-full border border-gray-200/80 dark:border-slate-800 shadow-sm select-none"
+                        className="group inline-flex items-center gap-1.5 bg-white dark:bg-slate-900 px-4 py-2 rounded-full border border-gray-200/80 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-violet-300 dark:hover:border-violet-600 transition-all duration-300 cursor-pointer select-none"
                     >
                         <div className="relative flex items-center justify-center w-5 h-5">
-                            <span className="absolute inset-0 bg-violet-400/20 rounded-full animate-ping"></span>
+                            {/* Layered Pulsing Aura Rings */}
+                            <span className="absolute inset-0 bg-violet-500/40 rounded-full animate-ping"></span>
+                            <span className="absolute -inset-1 bg-violet-400/20 rounded-full animate-pulse"></span>
+
+                            {/* Floating & Interactive Animated SVG Icon */}
                             <svg
-                                className="w-4.5 h-4.5 text-violet-600 dark:text-violet-400 relative z-10"
+                                className="w-4.5 h-4.5 text-violet-600 dark:text-violet-400 relative z-10 animate-bounce transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12"
                                 viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
@@ -393,17 +397,17 @@ export default function Home() {
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                             >
-                                <circle cx="12" cy="5" r="2" />
-                                <path d="M8 11a4 4 0 0 1 8 0" />
-                                <rect x="6.5" y="10.5" width="11" height="6.5" rx="1" fill="#f3e8ff" stroke="#7c3aed" />
+                                <circle cx="12" cy="5" r="2" className="animate-pulse" />
+                                <path d="M8 11a4 4 0 0 1 8 0" className="transition-all duration-300 group-hover:stroke-purple-400" />
+                                <rect x="6.5" y="10.5" width="11" height="6.5" rx="1" fill="#f3e8ff" stroke="#7c3aed" className="animate-pulse" />
                                 <line x1="8.5" y1="12.5" x2="12" y2="12.5" stroke="#7c3aed" strokeWidth="1.2" className="animate-pulse" />
                                 <line x1="8.5" y1="14.5" x2="15.5" y2="14.5" stroke="#d97706" strokeWidth="1.2" className="animate-pulse" />
                                 <path d="M4.5 18h15" stroke="#7c3aed" strokeWidth="2" />
                             </svg>
                         </div>
 
-                        <span className="opacity-60">by</span>
-                        <span className="font-bold tracking-wide">tijnara</span>
+                        <span className="opacity-60 transition-opacity duration-300 group-hover:opacity-100">by</span>
+                        <span className="font-bold tracking-wide transition-colors duration-300 group-hover:text-violet-600 dark:group-hover:text-violet-400">tijnara</span>
                     </div>
                 </footer>
 

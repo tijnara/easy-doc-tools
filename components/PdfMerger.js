@@ -383,7 +383,7 @@ export default function PdfMerger() {
                                     onDragOver={(e) => handleDragOver(e, idx)}
                                     onDrop={(e) => handleDrop(e, idx)}
                                     onDragEnd={handleDragEnd}
-                                    title={`Drag to reorder: ${file.name}`}
+                                    title={file.name}
                                     className={`relative flex flex-col bg-white dark:bg-slate-900 border rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all select-none group cursor-grab active:cursor-grabbing ${
                                         draggedIndex === idx
                                             ? 'opacity-30 border-dashed border-blue-500 scale-95'
@@ -392,6 +392,11 @@ export default function PdfMerger() {
                                                 : 'border-gray-200 dark:border-slate-800'
                                     }`}
                                 >
+                                    {/* Hover Tooltip Popup displaying Full Filename */}
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-max max-w-[220px] bg-slate-950 dark:bg-slate-800 text-white dark:text-gray-100 text-[11px] font-medium p-2.5 rounded-xl shadow-2xl border border-slate-800 dark:border-slate-700 z-30 pointer-events-none text-center break-words leading-tight animate-fadeIn">
+                                        {file.name}
+                                    </div>
+
                                     {/* Action Header Overlay */}
                                     <div className="absolute top-2 left-2 right-2 z-10 flex justify-between items-center pointer-events-none">
                                         <span className="font-mono font-extrabold text-[11px] bg-slate-900/80 text-white dark:bg-slate-800/90 dark:text-gray-100 px-2 py-0.5 rounded-full shadow-xs">
