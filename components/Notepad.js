@@ -66,10 +66,21 @@ export default function Notepad() {
     return (
         <div className="flex flex-col gap-3 p-5 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
             <div className="flex justify-between items-center">
-                <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                    <span>📝</span>
-                    <span>Quick Note</span>
-                </h2>
+                {/* Header with Hover Tooltip Popup displaying Local PC & Browser Persistence */}
+                <div className="relative group flex items-center gap-2 cursor-help">
+                    <h2
+                        className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2 select-none"
+                        title="Anything typed here stays saved as long as you open this site on the same PC and same browser."
+                    >
+                        <span>📝</span>
+                        <span>Quick Note</span>
+                    </h2>
+
+                    {/* Hover Tooltip Popup Box */}
+                    <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-64 bg-slate-950 dark:bg-slate-800 text-white dark:text-gray-100 text-xs p-3 rounded-xl shadow-xl border border-slate-800 dark:border-slate-700 z-30 pointer-events-none animate-fadeIn leading-relaxed">
+                        💾 <strong>Saved on this PC & Browser:</strong> Anything typed here is automatically saved in your browser storage. When you close and reopen this website on the <strong>same computer and same browser</strong>, your notes will stay and display here again!
+                    </div>
+                </div>
 
                 {feedback && (
                     <span className="text-xs font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40 px-2.5 py-0.5 rounded-full border border-green-200 dark:border-green-900/50">
@@ -81,7 +92,7 @@ export default function Notepad() {
             <textarea
                 value={note}
                 onChange={handleChange}
-                placeholder="Jot down quick thoughts, temporary text, or code snippets here..."
+                placeholder="Jot down quick thoughts, temporary text, or code snippets here... (Auto-saved on same PC & same browser)"
                 className="w-full h-40 p-3 bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/40 text-sm font-mono text-gray-800 dark:text-gray-100 resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-colors"
             />
 
