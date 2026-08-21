@@ -80,7 +80,14 @@ export default function Calculator() {
                 return;
             }
             const evalResult = new Function(`return ${sanitized}`)();
-            const resStr = String(evalResult);
+
+            // Limit result strictly to a maximum of 2 decimal places
+            let resStr = String(evalResult);
+            if (typeof evalResult === 'number' && !isNaN(evalResult) && isFinite(evalResult)) {
+                const rounded = Math.round((evalResult + Number.EPSILON) * 100) / 100;
+                resStr = String(rounded);
+            }
+
             setResult(resStr);
             await recordCalculation(input, resStr);
         } catch {
@@ -91,9 +98,14 @@ export default function Calculator() {
     const handleCopyResult = () => {
         const textToCopy = result !== '' ? result : input;
         if (!textToCopy) return;
+
         navigator.clipboard.writeText(textToCopy);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+
+        // Wipe both the calculator input field AND the result display for next calculations
+        setInput('');
+        setResult('');
     };
 
     useEffect(() => {
@@ -169,10 +181,10 @@ export default function Calculator() {
                 </h2>
                 <button
                     onClick={handleCopyResult}
-                    title="Copy current result or input value to clipboard"
+                    title="Copy current result or input value to clipboard and clear calculator"
                     className="px-3 py-1 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-lg transition"
                 >
-                    {copied ? '✓ Copied!' : '📋 Copy Result'}
+                    {copied ? '✓ Copied & Cleared!' : '📋 Copy Result'}
                 </button>
             </div>
 
