@@ -294,6 +294,10 @@ export default function PdfMerger() {
             }
 
             await saveToHistory(finalFileName, files.length);
+
+            // Wipe workspace files and IndexedDB cache after merge completion/download
+            clearAllFiles();
+            setOutputFileName('combined-document');
         } catch (err) {
             console.error(err);
             setErrorMessage('Error combining documents. Please check if your files are readable.');
