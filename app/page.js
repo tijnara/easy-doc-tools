@@ -29,13 +29,67 @@ const THEMES = [
         dotColor: 'bg-purple-500'
     },
     {
-        id: 'cherry-blossom',
-        name: 'Cherry Blossom',
+        id: 'sakura-bloom',
+        name: 'Sakura Bloom',
         icon: '🌸',
         isDark: false,
-        bgClass: 'bg-[#fff5f8] text-rose-950',
-        badgeColor: 'bg-white text-rose-800 border-rose-200',
+        bgClass: 'bg-[#fff0f5] text-rose-950',
+        badgeColor: 'bg-white text-rose-900 border-rose-200',
+        dotColor: 'bg-rose-300'
+    },
+    {
+        id: 'peony-petal',
+        name: 'Peony Petal',
+        icon: '🦢',
+        isDark: false,
+        bgClass: 'bg-[#fce7f3] text-pink-950',
+        badgeColor: 'bg-white text-pink-900 border-pink-300',
         dotColor: 'bg-pink-400'
+    },
+    {
+        id: 'bubblegum-pop',
+        name: 'Bubblegum Pop',
+        icon: '🎀',
+        isDark: false,
+        bgClass: 'bg-[#fbcfe8] text-pink-950',
+        badgeColor: 'bg-white text-pink-950 border-pink-400',
+        dotColor: 'bg-pink-500'
+    },
+    {
+        id: 'quartz-desert',
+        name: 'Quartz Desert',
+        icon: '🏜️',
+        isDark: false,
+        bgClass: 'bg-[#f6efe6] text-stone-900',
+        badgeColor: 'bg-white text-stone-800 border-stone-300',
+        dotColor: 'bg-amber-600'
+    },
+    {
+        id: 'coral-reef',
+        name: 'Coral Reef',
+        icon: '🪸',
+        isDark: true,
+        bgClass: 'bg-[#180912] text-rose-100',
+        badgeColor: 'bg-rose-950 text-rose-200 border-rose-800',
+        dotColor: 'bg-rose-500'
+    },
+    {
+        id: 'petal-blush',
+        name: 'Petal Blush',
+        icon: '🌷',
+        isDark: false,
+        bgClass: 'bg-[#fcf2f4] text-pink-950',
+        badgeColor: 'bg-white text-pink-900 border-pink-200',
+        dotColor: 'bg-pink-400'
+    },
+    {
+        id: 'berry-bramble',
+        name: 'Berry Bramble',
+        icon: '🫐',
+        isDark: true,
+        bgClass: 'bg-[#120311] text-fuchsia-100',
+        badgeColor: 'bg-fuchsia-950 text-fuchsia-200 border-fuchsia-900',
+        dotColor: 'bg-fuchsia-600'
     },
     {
         id: 'mystic-orchid',
@@ -115,7 +169,6 @@ export default function Home() {
         const selected = THEMES.find((t) => t.id === themeId) || THEMES[0];
         setCurrentTheme(selected.id);
 
-        // Save theme selection persistently in localStorage across visits
         localStorage.setItem('workspace_theme_id', selected.id);
         localStorage.setItem('theme', selected.isDark ? 'dark' : 'light');
 
@@ -128,17 +181,14 @@ export default function Home() {
 
     // Restore splash screen, active tab, and last used theme on mount
     useEffect(() => {
-        // 1. Restore persistent theme setting (checking workspace_theme_id or legacy theme)
         const savedThemeId = localStorage.getItem('workspace_theme_id') || localStorage.getItem('theme') || 'dark';
         applyTheme(savedThemeId);
 
-        // 2. Splash Screen Check
         const hasSeenSplash = sessionStorage.getItem('has_seen_splash');
         if (!hasSeenSplash) {
             setShowSplash(true);
         }
 
-        // 3. Active Tab Check
         const savedTab = sessionStorage.getItem('active_workspace_tab');
         if (savedTab) {
             setActiveTab(savedTab);
@@ -192,7 +242,7 @@ export default function Home() {
 
                     {/* Theme Palette Dropdown Popup */}
                     {isThemeMenuOpen && (
-                        <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 flex flex-col gap-1 z-40 max-h-80 overflow-y-auto animate-fadeIn">
+                        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 flex flex-col gap-1 z-40 max-h-80 overflow-y-auto animate-fadeIn">
                             <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-2.5 py-1">
                                 Color Palette
                             </p>
