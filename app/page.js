@@ -73,15 +73,7 @@ const THEMES = [
         badgeColor: 'bg-rose-950 text-rose-200 border-rose-800',
         dotColor: 'bg-rose-500'
     },
-    {
-        id: 'petal-blush',
-        name: 'Petal Blush',
-        icon: '🌷',
-        isDark: false,
-        bgClass: 'bg-[#fcf2f4] text-pink-950',
-        badgeColor: 'bg-white text-pink-900 border-pink-200',
-        dotColor: 'bg-pink-400'
-    },
+
     {
         id: 'berry-bramble',
         name: 'Berry Bramble',
