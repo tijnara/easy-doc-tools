@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import SplashScreen from '@/components/SplashScreen';
 import LineDeleter from '@/components/LineDeleter';
 import PdfConverter from '@/components/PdfConverter';
@@ -9,38 +9,153 @@ import DueDateCalculator from '@/components/DueDateCalculator';
 import Calculator from '@/components/Calculator';
 import Notepad from '@/components/Notepad';
 
+const THEMES = [
+    {
+        id: 'dark',
+        name: 'Slate Dark',
+        icon: '🌙',
+        isDark: true,
+        bgClass: 'bg-slate-950 text-gray-100',
+        badgeColor: 'bg-slate-800 text-slate-200 border-slate-700',
+        dotColor: 'bg-slate-400'
+    },
+    {
+        id: 'violet',
+        name: 'Midnight Violet',
+        icon: '🌌',
+        isDark: true,
+        bgClass: 'bg-[#0d071b] text-purple-100',
+        badgeColor: 'bg-purple-950 text-purple-200 border-purple-800',
+        dotColor: 'bg-purple-500'
+    },
+    {
+        id: 'cherry-blossom',
+        name: 'Cherry Blossom',
+        icon: '🌸',
+        isDark: false,
+        bgClass: 'bg-[#fff5f8] text-rose-950',
+        badgeColor: 'bg-white text-rose-800 border-rose-200',
+        dotColor: 'bg-pink-400'
+    },
+    {
+        id: 'mystic-orchid',
+        name: 'Mystic Orchid',
+        icon: '🔮',
+        isDark: true,
+        bgClass: 'bg-[#14081c] text-fuchsia-100',
+        badgeColor: 'bg-fuchsia-950 text-fuchsia-200 border-fuchsia-800',
+        dotColor: 'bg-fuchsia-500'
+    },
+    {
+        id: 'twilight-magenta',
+        name: 'Twilight Magenta',
+        icon: '🌆',
+        isDark: true,
+        bgClass: 'bg-[#1a0518] text-pink-100',
+        badgeColor: 'bg-pink-950 text-pink-200 border-pink-800',
+        dotColor: 'bg-pink-500'
+    },
+    {
+        id: 'cotton-nebula',
+        name: 'Cotton Nebula',
+        icon: '☁️',
+        isDark: true,
+        bgClass: 'bg-[#0f1126] text-indigo-100',
+        badgeColor: 'bg-indigo-950 text-indigo-200 border-indigo-800',
+        dotColor: 'bg-indigo-400'
+    },
+    {
+        id: 'emerald',
+        name: 'Emerald Forest',
+        icon: '🌲',
+        isDark: true,
+        bgClass: 'bg-[#03170e] text-emerald-100',
+        badgeColor: 'bg-emerald-950 text-emerald-200 border-emerald-800',
+        dotColor: 'bg-emerald-500'
+    },
+    {
+        id: 'amber',
+        name: 'Sunset Amber',
+        icon: '🌅',
+        isDark: true,
+        bgClass: 'bg-[#1a0e05] text-amber-100',
+        badgeColor: 'bg-amber-950 text-amber-200 border-amber-800',
+        dotColor: 'bg-amber-500'
+    },
+    {
+        id: 'ocean',
+        name: 'Deep Ocean',
+        icon: '🌊',
+        isDark: true,
+        bgClass: 'bg-[#031321] text-cyan-100',
+        badgeColor: 'bg-cyan-950 text-cyan-200 border-cyan-800',
+        dotColor: 'bg-cyan-500'
+    },
+    {
+        id: 'light',
+        name: 'Light Clean',
+        icon: '☀️',
+        isDark: false,
+        bgClass: 'bg-slate-50 text-slate-900',
+        badgeColor: 'bg-white text-slate-800 border-gray-200',
+        dotColor: 'bg-amber-400'
+    }
+];
+
 export default function Home() {
     const [showSplash, setShowSplash] = useState(false);
     const [activeTab, setActiveTab] = useState('cleaner');
-    const [darkMode, setDarkMode] = useState(false);
+    const [currentTheme, setCurrentTheme] = useState('dark');
+    const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
 
-    // Restore splash screen status & active tab from sessionStorage on mount
-    useEffect(() => {
-        setIsMounted(true);
+    const themeMenuRef = useRef(null);
 
-        // 1. Splash Screen Check (Show splash screen only once per session)
+    const applyTheme = (themeId) => {
+        const selected = THEMES.find((t) => t.id === themeId) || THEMES[0];
+        setCurrentTheme(selected.id);
+
+        // Save theme selection persistently in localStorage across visits
+        localStorage.setItem('workspace_theme_id', selected.id);
+        localStorage.setItem('theme', selected.isDark ? 'dark' : 'light');
+
+        if (selected.isDark) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    };
+
+    // Restore splash screen, active tab, and last used theme on mount
+    useEffect(() => {
+        // 1. Restore persistent theme setting (checking workspace_theme_id or legacy theme)
+        const savedThemeId = localStorage.getItem('workspace_theme_id') || localStorage.getItem('theme') || 'dark';
+        applyTheme(savedThemeId);
+
+        // 2. Splash Screen Check
         const hasSeenSplash = sessionStorage.getItem('has_seen_splash');
         if (!hasSeenSplash) {
             setShowSplash(true);
         }
 
-        // 2. Active Tab Restore (Returns to exact tab user was working on)
+        // 3. Active Tab Check
         const savedTab = sessionStorage.getItem('active_workspace_tab');
         if (savedTab) {
             setActiveTab(savedTab);
         }
 
-        // 3. Dark Mode Restore
-        const savedTheme = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-            setDarkMode(true);
-            document.documentElement.classList.add('dark');
-        } else {
-            setDarkMode(false);
-            document.documentElement.classList.remove('dark');
-        }
+        setIsMounted(true);
+    }, []);
+
+    // Close theme menu on outside click
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (themeMenuRef.current && !themeMenuRef.current.contains(e.target)) {
+                setIsThemeMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     const handleTabChange = (tabName) => {
@@ -53,43 +168,59 @@ export default function Home() {
         sessionStorage.setItem('has_seen_splash', 'true');
     };
 
-    const toggleDarkMode = () => {
-        if (darkMode) {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-            setDarkMode(false);
-        } else {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-            setDarkMode(true);
-        }
-    };
-
     if (!isMounted) return null;
 
+    const activeThemeObj = THEMES.find((t) => t.id === currentTheme) || THEMES[0];
+
     return (
-        <div className={darkMode ? 'dark' : ''}>
+        <div className={activeThemeObj.isDark ? 'dark' : ''}>
             {showSplash && <SplashScreen onFinish={handleFinishSplash} />}
 
-            <main className="min-h-screen bg-slate-50 dark:bg-slate-950 py-10 px-4 flex flex-col justify-between relative transition-colors duration-300">
+            <main className={`min-h-screen ${activeThemeObj.bgClass} py-10 px-4 flex flex-col justify-between relative transition-colors duration-500`}>
 
-                {/* Top Floating Dark Mode Toggle */}
-                <div className="absolute top-6 right-6 z-10">
+                {/* Top Floating Multi-Theme Palette Selector */}
+                <div className="absolute top-6 right-6 z-30" ref={themeMenuRef}>
                     <button
-                        onClick={toggleDarkMode}
-                        className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
-                        aria-label="Toggle Dark Mode"
+                        onClick={() => setIsThemeMenuOpen((prev) => !prev)}
+                        className={`px-3.5 py-2 rounded-2xl border shadow-sm flex items-center gap-2 transition active:scale-95 ${activeThemeObj.badgeColor}`}
+                        title="Change Theme Palette"
                     >
-                        {darkMode ? (
-                            <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                        ) : (
-                            <svg className="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                            </svg>
-                        )}
+                        <span className={`w-2.5 h-2.5 rounded-full ${activeThemeObj.dotColor} animate-pulse`}></span>
+                        <span className="text-xs font-bold hidden sm:inline">{activeThemeObj.name}</span>
+                        <span className="text-xs">{activeThemeObj.icon}</span>
                     </button>
+
+                    {/* Theme Palette Dropdown Popup */}
+                    {isThemeMenuOpen && (
+                        <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 flex flex-col gap-1 z-40 max-h-80 overflow-y-auto animate-fadeIn">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-2.5 py-1">
+                                Color Palette
+                            </p>
+                            {THEMES.map((theme) => {
+                                const isSelected = theme.id === currentTheme;
+                                return (
+                                    <button
+                                        key={theme.id}
+                                        onClick={() => {
+                                            applyTheme(theme.id);
+                                            setIsThemeMenuOpen(false);
+                                        }}
+                                        className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition ${
+                                            isSelected
+                                                ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900/50'
+                                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <span>{theme.icon}</span>
+                                            <span>{theme.name}</span>
+                                        </div>
+                                        <span className={`w-2 h-2 rounded-full ${theme.dotColor}`}></span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
 
                 <div className="max-w-6xl mx-auto w-full flex flex-col gap-6">
@@ -124,9 +255,9 @@ export default function Home() {
                                     <circle cx="16" cy="27" r="1.2" fill="#fbbf24" />
                                 </svg>
                             </div>
-                            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Workspace Kit</h1>
+                            <h1 className="text-3xl font-extrabold tracking-tight">Workspace Kit</h1>
                         </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Essential text, document, PDF, due date, calculation, and notepad tools</p>
+                        <p className="text-sm opacity-70">Essential text, document, PDF, due date, calculation, and notepad tools</p>
                     </div>
 
                     {/* Side-by-Side Main Layout */}
@@ -206,7 +337,7 @@ export default function Home() {
                 </div>
 
                 {/* Footer Author Badge */}
-                <footer className="mt-12 text-center text-xs text-gray-500 dark:text-gray-400 font-medium flex items-center justify-center">
+                <footer className="mt-12 text-center text-xs font-medium flex items-center justify-center">
                     <a
                         href="https://portfolio-aranjit-archita.vercel.app/"
                         target="_blank"
@@ -234,14 +365,14 @@ export default function Home() {
                             </svg>
                         </div>
 
-                        <span className="text-gray-500 dark:text-gray-400 pointer-events-none">by</span>
-                        <span className="font-bold text-gray-800 dark:text-gray-200 tracking-wide pointer-events-none">tijnara</span>
+                        <span className="opacity-60 pointer-events-none">by</span>
+                        <span className="font-bold tracking-wide pointer-events-none">tijnara ↗</span>
                     </a>
                 </footer>
 
                 {/* Corner Watermark Badge */}
                 <div className="fixed bottom-3 right-4 pointer-events-none opacity-40 hover:opacity-100 transition-opacity hidden sm:block">
-                    <span className="text-[10px] font-mono tracking-widest uppercase text-gray-400 dark:text-gray-500 select-none">
+                    <span className="text-[10px] font-mono tracking-widest uppercase opacity-60 select-none">
                         Author: tijnara
                     </span>
                 </div>
