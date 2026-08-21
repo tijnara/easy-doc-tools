@@ -366,7 +366,7 @@ export default function Home() {
                         </div>
 
                         <span className="opacity-60 pointer-events-none">by</span>
-                        <span className="font-bold tracking-wide pointer-events-none">tijnara ↗</span>
+                        <span className="font-bold tracking-wide pointer-events-none">tijnara</span>
                     </a>
                 </footer>
 
