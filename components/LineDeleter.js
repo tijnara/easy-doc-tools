@@ -13,6 +13,9 @@ export default function LineDeleter() {
     const [redoStack, setRedoStack] = useState([]);
     const isUndoRedoRef = useRef(false);
 
+    const containerRef = useRef(null);
+    const animationFrameRef = useRef(null);
+
     // Restore saved text from localStorage when the component mounts
     useEffect(() => {
         const savedText = localStorage.getItem('clean_text_input');
@@ -96,13 +99,32 @@ export default function LineDeleter() {
         }
     };
 
+    // Smooth Desktop Window-Style Resizing Handler
     const handleMouseDown = (e, direction) => {
         e.preventDefault();
+        e.stopPropagation();
+
+        const container = containerRef.current;
+        if (!container) return;
+
         const startX = e.clientX;
         const startY = e.clientY;
-        const container = e.currentTarget.parentElement;
         const startWidth = container.offsetWidth;
         const startHeight = container.offsetHeight;
+
+        const cursorMap = {
+            n: 'ns-resize', s: 'ns-resize',
+            e: 'ew-resize', w: 'ew-resize',
+            ne: 'nesw-resize', sw: 'nesw-resize',
+            nw: 'nwse-resize', se: 'nwse-resize'
+        };
+
+        // Lock global selection and cursor during drag
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = cursorMap[direction] || 'default';
+
+        let currentWidth = startWidth;
+        let currentHeight = startHeight;
 
         const handleMouseMove = (moveEvent) => {
             const deltaX = moveEvent.clientX - startX;
@@ -116,21 +138,46 @@ export default function LineDeleter() {
             if (direction.includes('s')) newHeight = startHeight + deltaY;
             if (direction.includes('n')) newHeight = startHeight - deltaY;
 
-            newWidth = Math.max(260, newWidth);
+            const parentWidth = container.parentElement ? container.parentElement.offsetWidth : 1000;
+            newWidth = Math.min(Math.max(260, newWidth), parentWidth);
             newHeight = Math.max(120, newHeight);
 
-            setBoxDimensions({
-                width: `${newWidth}px`,
-                height: `${newHeight}px`,
+            currentWidth = newWidth;
+            currentHeight = newHeight;
+
+            // Direct hardware-accelerated DOM mutation via requestAnimationFrame
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+            }
+
+            animationFrameRef.current = requestAnimationFrame(() => {
+                if (container) {
+                    container.style.width = `${currentWidth}px`;
+                    container.style.height = `${currentHeight}px`;
+                }
             });
         };
 
         const handleMouseUp = () => {
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+            }
+
+            // Unlock text selection & global cursor
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
+
+            // Sync state once resizing completes
+            setBoxDimensions({
+                width: `${currentWidth}px`,
+                height: `${currentHeight}px`,
+            });
         };
 
-        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mousemove', handleMouseMove, { passive: true });
         window.addEventListener('mouseup', handleMouseUp);
     };
 
@@ -155,6 +202,10 @@ export default function LineDeleter() {
 
     const handleResetSize = () => {
         setBoxDimensions(INITIAL_DIMENSIONS);
+        if (containerRef.current) {
+            containerRef.current.style.width = INITIAL_DIMENSIONS.width;
+            containerRef.current.style.height = `${INITIAL_DIMENSIONS.height}px`;
+        }
         showToast('Box size reset!');
     };
 
@@ -213,7 +264,8 @@ export default function LineDeleter() {
             </div>
 
             <div
-                className="relative group border rounded-xl overflow-hidden bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800 transition-all max-w-full"
+                ref={containerRef}
+                className="relative group border rounded-xl overflow-hidden bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800 max-w-full"
                 style={{ width: boxDimensions.width, height: boxDimensions.height }}
             >
                 <textarea
@@ -224,15 +276,16 @@ export default function LineDeleter() {
                     onKeyDown={handleKeyDown}
                 />
 
-                <div onMouseDown={(e) => handleMouseDown(e, 'n')} className="absolute top-0 left-3 right-3 h-2 cursor-n-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
-                <div onMouseDown={(e) => handleMouseDown(e, 's')} className="absolute bottom-0 left-3 right-3 h-2 cursor-s-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
-                <div onMouseDown={(e) => handleMouseDown(e, 'w')} className="absolute top-3 bottom-3 left-0 w-2 cursor-w-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
-                <div onMouseDown={(e) => handleMouseDown(e, 'e')} className="absolute top-3 bottom-3 right-0 w-2 cursor-e-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
+                {/* Window Resize Handles */}
+                <div onMouseDown={(e) => handleMouseDown(e, 'n')} className="absolute top-0 left-3 right-3 h-2 cursor-ns-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
+                <div onMouseDown={(e) => handleMouseDown(e, 's')} className="absolute bottom-0 left-3 right-3 h-2 cursor-ns-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
+                <div onMouseDown={(e) => handleMouseDown(e, 'w')} className="absolute top-3 bottom-3 left-0 w-2 cursor-ew-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
+                <div onMouseDown={(e) => handleMouseDown(e, 'e')} className="absolute top-3 bottom-3 right-0 w-2 cursor-ew-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
 
-                <div onMouseDown={(e) => handleMouseDown(e, 'nw')} className="absolute top-0 left-0 w-3.5 h-3.5 cursor-nw-resize hover:bg-blue-500/40 active:bg-blue-500/60 rounded-tl transition-colors z-10" />
-                <div onMouseDown={(e) => handleMouseDown(e, 'ne')} className="absolute top-0 right-0 w-3.5 h-3.5 cursor-ne-resize hover:bg-blue-500/40 active:bg-blue-500/60 rounded-tr transition-colors z-10" />
-                <div onMouseDown={(e) => handleMouseDown(e, 'sw')} className="absolute bottom-0 left-0 w-3.5 h-3.5 cursor-sw-resize hover:bg-blue-500/40 active:bg-blue-500/60 rounded-bl transition-colors z-10" />
-                <div onMouseDown={(e) => handleMouseDown(e, 'se')} className="absolute bottom-0 right-0 w-3.5 h-3.5 cursor-se-resize hover:bg-blue-500/40 active:bg-blue-500/60 rounded-br transition-colors z-10" />
+                <div onMouseDown={(e) => handleMouseDown(e, 'nw')} className="absolute top-0 left-0 w-3.5 h-3.5 cursor-nwse-resize hover:bg-blue-500/40 active:bg-blue-500/60 rounded-tl transition-colors z-10" />
+                <div onMouseDown={(e) => handleMouseDown(e, 'ne')} className="absolute top-0 right-0 w-3.5 h-3.5 cursor-nesw-resize hover:bg-blue-500/40 active:bg-blue-500/60 rounded-tr transition-colors z-10" />
+                <div onMouseDown={(e) => handleMouseDown(e, 'sw')} className="absolute bottom-0 left-0 w-3.5 h-3.5 cursor-nesw-resize hover:bg-blue-500/40 active:bg-blue-500/60 rounded-bl transition-colors z-10" />
+                <div onMouseDown={(e) => handleMouseDown(e, 'se')} className="absolute bottom-0 right-0 w-3.5 h-3.5 cursor-nwse-resize hover:bg-blue-500/40 active:bg-blue-500/60 rounded-br transition-colors z-10" />
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row">
