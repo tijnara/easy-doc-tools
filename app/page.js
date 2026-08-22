@@ -6,6 +6,7 @@ import PdfConverter from '@/components/PdfConverter';
 import PdfMerger from '@/components/PdfMerger';
 import PdfSplitter from '@/components/PdfSplitter';
 import DueDateCalculator from '@/components/DueDateCalculator';
+import NrdCalculator from '@/components/NrdCalculator';
 import Calculator from '@/components/Calculator';
 import Notepad from '@/components/Notepad';
 
@@ -313,7 +314,7 @@ export default function Home() {
                         {/* Main Document & Due Date Tools Section */}
                         <div className="order-2 lg:order-1 lg:col-span-7 flex flex-col gap-4">
                             {/* Tool Navigation Tabs */}
-                            <div className="grid grid-cols-2 sm:grid-cols-5 bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1">
+                            <div className="grid grid-cols-3 sm:grid-cols-6 bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1">
                                 <button
                                     onClick={() => handleTabChange('cleaner')}
                                     className={`py-2.5 text-xs font-bold rounded-xl transition ${
@@ -364,6 +365,16 @@ export default function Home() {
                                 >
                                     Due Date
                                 </button>
+                                <button
+                                    onClick={() => handleTabChange('nrd')}
+                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                        activeTab === 'nrd'
+                                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                    }`}
+                                >
+                                    NRD Calc
+                                </button>
                             </div>
 
                             {/* Active Tool Views */}
@@ -372,6 +383,7 @@ export default function Home() {
                             {activeTab === 'merger' && <PdfMerger />}
                             {activeTab === 'splitpdf' && <PdfSplitter />}
                             {activeTab === 'duedate' && <DueDateCalculator />}
+                            {activeTab === 'nrd' && <NrdCalculator />}
                         </div>
 
                     </div>
