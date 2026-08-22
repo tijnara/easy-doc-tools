@@ -110,7 +110,6 @@ export default function NrdCalculator() {
     const [annivDateStr, setAnnivDateStr] = useState('2026-08-22');
     const [selectedRuleId, setSelectedRuleId] = useState('new');
     const [isAutoDetected, setIsAutoDetected] = useState(true);
-    const [currentYearToggle, setCurrentYearToggle] = useState('Yes');
     const [feedback, setFeedback] = useState('');
 
     // Restore state from localStorage on mount
@@ -299,19 +298,7 @@ export default function NrdCalculator() {
             </div>
 
             {/* Input Date Controls Header */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 bg-gray-50 dark:bg-slate-950 rounded-xl border border-gray-200 dark:border-slate-800">
-                <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400">Current Year</label>
-                    <select
-                        value={currentYearToggle}
-                        onChange={(e) => setCurrentYearToggle(e.target.value)}
-                        className="p-2.5 border rounded-xl text-xs font-bold text-gray-800 dark:text-gray-100 bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        <option value="Yes">Yes</option>
-                        <option value="No">No</option>
-                    </select>
-                </div>
-
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-gray-50 dark:bg-slate-950 rounded-xl border border-gray-200 dark:border-slate-800">
                 {/* Manual Type + Calendar Selection for Start Date */}
                 <div className="flex flex-col gap-1">
                     <label className="text-xs font-bold text-gray-500 dark:text-gray-400">Start Date (DD/MM/YYYY)</label>
