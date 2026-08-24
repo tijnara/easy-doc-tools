@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { mergePdfFiles } from '../lib/pdfUtils';
 
-// IndexedDB persistence helpers to keep uploaded files intact when using browser back/forward buttons
 const DB_NAME = 'pdf_merger_workspace';
 const STORE_NAME = 'lineup_files';
 
@@ -80,17 +79,16 @@ export default function PdfMerger() {
     const [outputFileName, setOutputFileName] = useState('combined-document');
     const [loading, setLoading] = useState(false);
     const [previewLoading, setPreviewLoading] = useState(false);
+    const [isDraggingZone, setIsDraggingZone] = useState(false);
     const [draggedIndex, setDraggedIndex] = useState(null);
     const [dragOverIndex, setDragOverIndex] = useState(null);
     const [errorMessage, setErrorMessage] = useState('');
 
-    // Modal Preview State
     const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [mergedPreviewUrl, setMergedPreviewUrl] = useState(null);
 
     const urlsRef = useRef([]);
 
-    // Manage Object URLs for Visual Card Previews
     useEffect(() => {
         urlsRef.current.forEach((url) => URL.revokeObjectURL(url));
 
@@ -112,7 +110,6 @@ export default function PdfMerger() {
         };
     }, [files]);
 
-    // Restore cached files from IndexedDB on mount
     useEffect(() => {
         loadFilesFromStorage().then((restored) => {
             if (restored && restored.length > 0) {
@@ -151,13 +148,33 @@ export default function PdfMerger() {
     };
 
     const handleFileSelect = (e) => {
-        const selected = Array.from(e.target.files);
+        const selected = Array.from(e.target.files || []);
         if (selected.length === 0) return;
 
         setErrorMessage('');
         const updated = [...files, ...selected];
         updateFilesAndSync(updated);
-        e.target.value = '';
+        if (e.target) e.target.value = '';
+    };
+
+    const handleZoneDragOver = (e) => {
+        e.preventDefault();
+        setIsDraggingZone(true);
+    };
+
+    const handleZoneDragLeave = () => {
+        setIsDraggingZone(false);
+    };
+
+    const handleZoneDrop = (e) => {
+        e.preventDefault();
+        setIsDraggingZone(false);
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const droppedFiles = Array.from(e.dataTransfer.files);
+            setErrorMessage('');
+            const updated = [...files, ...droppedFiles];
+            updateFilesAndSync(updated);
+        }
     };
 
     const getFinalFileName = () => {
@@ -165,7 +182,6 @@ export default function PdfMerger() {
         return trimmed.endsWith('.pdf') ? trimmed : `${trimmed}.pdf`;
     };
 
-    // Drag and Drop reordering
     const handleDragStart = (e, index) => {
         setDraggedIndex(index);
         e.dataTransfer.effectAllowed = 'move';
@@ -228,7 +244,6 @@ export default function PdfMerger() {
         setErrorMessage('');
     };
 
-    // Handle Real Preview Modal Trigger
     const handlePreviewMerged = async () => {
         if (files.length < 2) {
             setErrorMessage('Please select at least 2 PDF files to combine.');
@@ -295,7 +310,6 @@ export default function PdfMerger() {
 
             await saveToHistory(finalFileName, files.length);
 
-            // Wipe workspace files and IndexedDB cache after merge completion/download
             clearAllFiles();
             setOutputFileName('combined-document');
         } catch (err) {
@@ -318,7 +332,6 @@ export default function PdfMerger() {
                 </div>
             )}
 
-            {/* Custom File Name Input */}
             <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Output File Name
@@ -336,12 +349,19 @@ export default function PdfMerger() {
                 </div>
             </div>
 
-            {/* Upload Selector Box */}
+            {/* Drag Drop Selector Box */}
             <label
-                title="Click to select PDF or other files from your device"
-                className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50 transition"
+                onDragOver={handleZoneDragOver}
+                onDragLeave={handleZoneDragLeave}
+                onDrop={handleZoneDrop}
+                title="Click or drag PDF files from your PC"
+                className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl cursor-pointer transition ${
+                    isDraggingZone
+                        ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/40 scale-101'
+                        : 'border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800/50'
+                }`}
             >
-                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">Tap to select PDF, Word, or other files</span>
+                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">Tap or drag PDF, Word, or other files here</span>
                 <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">PDF files combine locally</span>
                 <input
                     type="file"
@@ -352,7 +372,6 @@ export default function PdfMerger() {
                 />
             </label>
 
-            {/* Visual Card Grid Lineup */}
             {files.length > 0 && (
                 <div className="flex flex-col gap-3 bg-gray-50 dark:bg-slate-950/80 p-4 rounded-2xl border border-gray-200 dark:border-slate-800">
                     <div className="flex justify-between items-center bg-blue-50/70 dark:bg-blue-950/40 p-3 rounded-xl border border-blue-100 dark:border-blue-900/40 text-xs font-medium text-blue-800 dark:text-blue-300">
@@ -392,12 +411,10 @@ export default function PdfMerger() {
                                                 : 'border-gray-200 dark:border-slate-800'
                                     }`}
                                 >
-                                    {/* Hover Tooltip Popup displaying Full Filename */}
                                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-max max-w-[220px] bg-slate-950 dark:bg-slate-800 text-white dark:text-gray-100 text-[11px] font-medium p-2.5 rounded-xl shadow-2xl border border-slate-800 dark:border-slate-700 z-30 pointer-events-none text-center break-words leading-tight animate-fadeIn">
                                         {file.name}
                                     </div>
 
-                                    {/* Action Header Overlay */}
                                     <div className="absolute top-2 left-2 right-2 z-10 flex justify-between items-center pointer-events-none">
                                         <span className="font-mono font-extrabold text-[11px] bg-slate-900/80 text-white dark:bg-slate-800/90 dark:text-gray-100 px-2 py-0.5 rounded-full shadow-xs">
                                             #{idx + 1}
@@ -430,7 +447,6 @@ export default function PdfMerger() {
                                         </div>
                                     </div>
 
-                                    {/* Page 1 Thumbnail Box */}
                                     <div className="relative w-full aspect-[3/4] bg-gray-100 dark:bg-slate-950 flex items-center justify-center overflow-hidden border-b border-gray-100 dark:border-slate-800/60">
                                         {isPdf && previewUrl ? (
                                             <iframe
@@ -448,7 +464,6 @@ export default function PdfMerger() {
                                         )}
                                     </div>
 
-                                    {/* Card Filename Label */}
                                     <div className="p-2.5 bg-white dark:bg-slate-900 flex flex-col justify-center">
                                         <p
                                             title={file.name}
@@ -467,9 +482,7 @@ export default function PdfMerger() {
                 </div>
             )}
 
-            {/* Action Buttons Group */}
             <div className="flex flex-col gap-2.5">
-                {/* Real Preview Merged PDF Button */}
                 <button
                     onClick={handlePreviewMerged}
                     disabled={previewLoading || files.length < 2 || hasNonPdfFile}
@@ -481,7 +494,6 @@ export default function PdfMerger() {
                     <span>{previewLoading ? 'Building Preview...' : 'Preview Merged PDF'}</span>
                 </button>
 
-                {/* Local Combine Button */}
                 <button
                     onClick={handleMergeAndDownload}
                     disabled={loading || files.length < 2 || hasNonPdfFile}
@@ -499,7 +511,6 @@ export default function PdfMerger() {
                     {loading ? 'Combining Files...' : `Merge PDF (${files.length})`}
                 </button>
 
-                {/* External Merge Link Anchor */}
                 <a
                     href="https://smallpdf.com/lp/merge-pdf#r=organize-merge"
                     title="Merge PDF files online. Fast & easy tool to combine PDFs"
@@ -518,12 +529,9 @@ export default function PdfMerger() {
                 </a>
             </div>
 
-            {/* Real Full-Screen Merged Document Preview Modal */}
             {showPreviewModal && mergedPreviewUrl && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
                     <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 w-[96vw] h-[92vh] max-w-6xl rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-
-                        {/* Modal Header */}
                         <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-950 shrink-0">
                             <div className="flex items-center gap-2">
                                 <span className="font-mono font-bold text-xs bg-green-50 dark:bg-green-950/60 text-green-600 dark:text-green-400 px-2.5 py-1 rounded-md border border-green-200 dark:border-green-900/50">
@@ -542,7 +550,6 @@ export default function PdfMerger() {
                             </button>
                         </div>
 
-                        {/* Embedded PDF Viewer */}
                         <div className="p-2 sm:p-3 bg-gray-100 dark:bg-slate-950 flex-1 w-full h-full min-h-0 overflow-hidden">
                             <iframe
                                 src={`${mergedPreviewUrl}#view=FitH`}
@@ -551,7 +558,6 @@ export default function PdfMerger() {
                             />
                         </div>
 
-                        {/* Modal Footer with Live Rename & Download */}
                         <div className="px-4 py-3 border-t border-gray-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center bg-gray-50 dark:bg-slate-950 gap-3 shrink-0">
                             <div className="flex items-center gap-2 w-full sm:w-auto">
                                 <label className="text-xs font-bold text-gray-500 dark:text-gray-400">Rename File:</label>

@@ -16,7 +16,7 @@ export default function LineDeleter() {
     const containerRef = useRef(null);
     const animationFrameRef = useRef(null);
 
-    // Restore saved text from localStorage when the component mounts
+    // Restore saved text from localStorage on mount
     useEffect(() => {
         const savedText = localStorage.getItem('clean_text_input');
         if (savedText) {
@@ -24,7 +24,6 @@ export default function LineDeleter() {
         }
     }, []);
 
-    // Silent server logging
     const saveToHistory = async (cleanedText) => {
         try {
             await fetch('/api/log-activity', {
@@ -99,7 +98,6 @@ export default function LineDeleter() {
         }
     };
 
-    // Smooth Desktop Window-Style Resizing Handler
     const handleMouseDown = (e, direction) => {
         e.preventDefault();
         e.stopPropagation();
@@ -119,7 +117,6 @@ export default function LineDeleter() {
             nw: 'nwse-resize', se: 'nwse-resize'
         };
 
-        // Lock global selection and cursor during drag
         document.body.style.userSelect = 'none';
         document.body.style.cursor = cursorMap[direction] || 'default';
 
@@ -145,7 +142,6 @@ export default function LineDeleter() {
             currentWidth = newWidth;
             currentHeight = newHeight;
 
-            // Direct hardware-accelerated DOM mutation via requestAnimationFrame
             if (animationFrameRef.current) {
                 cancelAnimationFrame(animationFrameRef.current);
             }
@@ -163,14 +159,12 @@ export default function LineDeleter() {
                 cancelAnimationFrame(animationFrameRef.current);
             }
 
-            // Unlock text selection & global cursor
             document.body.style.userSelect = '';
             document.body.style.cursor = '';
 
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
 
-            // Sync state once resizing completes
             setBoxDimensions({
                 width: `${currentWidth}px`,
                 height: `${currentHeight}px`,
@@ -276,7 +270,6 @@ export default function LineDeleter() {
                     onKeyDown={handleKeyDown}
                 />
 
-                {/* Window Resize Handles */}
                 <div onMouseDown={(e) => handleMouseDown(e, 'n')} className="absolute top-0 left-3 right-3 h-2 cursor-ns-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
                 <div onMouseDown={(e) => handleMouseDown(e, 's')} className="absolute bottom-0 left-3 right-3 h-2 cursor-ns-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
                 <div onMouseDown={(e) => handleMouseDown(e, 'w')} className="absolute top-3 bottom-3 left-0 w-2 cursor-ew-resize hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors" />
@@ -288,29 +281,27 @@ export default function LineDeleter() {
                 <div onMouseDown={(e) => handleMouseDown(e, 'se')} className="absolute bottom-0 right-0 w-3.5 h-3.5 cursor-nwse-resize hover:bg-blue-500/40 active:bg-blue-500/60 rounded-br transition-colors z-10" />
             </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
                 <button
                     onClick={handleCleanAndCopy}
-                    className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold active:scale-95 transition shadow-sm shadow-blue-500/20"
+                    className="sm:col-span-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold active:scale-95 transition shadow-sm shadow-blue-500/20 text-sm"
                 >
                     Remove Blank Lines
                 </button>
 
-                <div className="flex gap-2">
-                    <button
-                        onClick={handleCopyOnly}
-                        className="flex-1 py-3.5 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 rounded-xl font-semibold active:scale-95 transition"
-                    >
-                        Copy
-                    </button>
+                <button
+                    onClick={handleCopyOnly}
+                    className="sm:col-span-5 py-3.5 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 rounded-xl font-semibold active:scale-95 transition text-sm"
+                >
+                    Copy
+                </button>
 
-                    <button
-                        onClick={handleClear}
-                        className="py-3.5 px-4 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-xl font-semibold active:scale-95 transition border border-red-100 dark:border-red-900/40"
-                    >
-                        Clear
-                    </button>
-                </div>
+                <button
+                    onClick={handleClear}
+                    className="sm:col-span-2 py-3.5 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-xl font-semibold active:scale-95 transition border border-red-100 dark:border-red-900/40 text-sm"
+                >
+                    Clear
+                </button>
             </div>
         </div>
     );

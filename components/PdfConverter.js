@@ -7,6 +7,7 @@ export default function PdfConverter() {
     const [images, setImages] = useState([]);
     const [officeFile, setOfficeFile] = useState(null);
     const [textInput, setTextInput] = useState('');
+    const [isDragging, setIsDragging] = useState(false);
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [toastMessage, setToastMessage] = useState('');
@@ -18,7 +19,6 @@ export default function PdfConverter() {
     const [outputFileName, setOutputFileName] = useState('');
     const [showPreviewModal, setShowPreviewModal] = useState(false);
 
-    // Silent server logging
     const saveToHistory = async (fileName, typeLabel) => {
         try {
             await fetch('/api/log-activity', {
@@ -146,8 +146,24 @@ export default function PdfConverter() {
             return;
         }
 
-        const redirectUrl = getILovePdfUrl(firstFile);
-        setErrorMessage(`"${firstFile.name}" is not supported here. For PowerPoint, video, PDF, or other files, please click the button`);
+        setErrorMessage(`"${firstFile.name}" is not supported here. For PowerPoint, video, PDF, or other files, please click the redirect button below.`);
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = () => {
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleSmartFileSelect(e.dataTransfer.files);
+        }
     };
 
     const handleConvert = async () => {
@@ -251,7 +267,14 @@ export default function PdfConverter() {
     };
 
     return (
-        <div className="flex flex-col gap-4 p-5 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
+        <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`flex flex-col gap-4 p-5 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border transition-colors duration-300 ${
+                isDragging ? 'border-blue-500 bg-blue-50/20 dark:bg-blue-950/20 ring-2 ring-blue-500/50' : 'border-gray-100 dark:border-slate-800'
+            }`}
+        >
             <div className="flex items-center justify-between flex-wrap gap-2">
                 <h2 className="text-xl font-bold text-gray-800 dark:text-white" title="Convert Office documents, images, or text to PDF">
                     Convert to PDF
@@ -351,10 +374,10 @@ export default function PdfConverter() {
             {mode === 'office' && (
                 <div className="flex flex-col gap-3">
                     <label
-                        title="Click to select Word or Excel document from your device"
+                        title="Click or drag Word or Excel document from your device"
                         className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50 transition"
                     >
-                        <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">Select Word or Excel Document</span>
+                        <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">Select or Drag Word or Excel Document</span>
                         <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">Supports .docx and .xlsx</span>
                         <input
                             type="file"
@@ -376,10 +399,10 @@ export default function PdfConverter() {
             {mode === 'image' && (
                 <div className="flex flex-col gap-3">
                     <label
-                        title="Click to select JPG or PNG image files"
+                        title="Click or drag JPG or PNG image files"
                         className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50 transition"
                     >
-                        <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">Select Images (JPG / PNG)</span>
+                        <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">Select or Drag Images (JPG / PNG)</span>
                         <input
                             type="file"
                             multiple
@@ -429,7 +452,7 @@ export default function PdfConverter() {
                         title="Click to import content from a text file (.txt)"
                         className="flex items-center justify-center p-2.5 bg-gray-50 dark:bg-slate-800/60 border border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800 transition"
                     >
-                        <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">📄 Or upload a text file (.txt)</span>
+                        <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">📄 Or upload/drag a text file (.txt)</span>
                         <input
                             type="file"
                             onChange={(e) => handleSmartFileSelect(e.target.files)}

@@ -1,16 +1,46 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 
+// Strict expression sanitizer to prevent invalid string characters and consecutive operators
+const sanitizeExpression = (expr) => {
+    if (!expr) return '';
+
+    // Standardize multiplication and division symbols
+    let cleaned = expr.replace(/[*]/g, '×').replace(/\//g, '÷');
+
+    // Filter out all non-calculator characters
+    cleaned = cleaned.replace(/[^0-9+\-×÷%().]/g, '');
+
+    // Prevent leading invalid operators at the start
+    cleaned = cleaned.replace(/^[+×÷%.]+/, '');
+
+    // Collapse consecutive operators into the last typed operator (e.g., "87*-*++" becomes "87+")
+    cleaned = cleaned.replace(/[+\-×÷%]{2,}/g, (match) => match.slice(-1));
+
+    // Prevent multiple decimal points within a single number segment
+    const parts = cleaned.split(/([+\-×÷%()])/);
+    const validParts = parts.map((part) => {
+        if (/^[0-9.]+$/.test(part)) {
+            const decParts = part.split('.');
+            if (decParts.length > 2) {
+                return decParts[0] + '.' + decParts.slice(1).join('');
+            }
+        }
+        return part;
+    });
+
+    return validParts.join('');
+};
+
 export default function Calculator() {
     const [input, setInput] = useState('');
     const [result, setResult] = useState('');
     const [copied, setCopied] = useState(false);
+    const [justCalculated, setJustCalculated] = useState(false);
 
-    // Local Device History state
     const [localHistory, setLocalHistory] = useState([]);
     const [showHistory, setShowHistory] = useState(false);
 
-    // Load local history ONLY from this specific PC on mount
     useEffect(() => {
         const saved = localStorage.getItem('calculator_history_local');
         if (saved) {
@@ -22,7 +52,6 @@ export default function Calculator() {
         }
     }, []);
 
-    // Save history to local PC AND silently send log to server
     const recordCalculation = async (expr, res) => {
         const newEntry = {
             id: Date.now(),
@@ -31,14 +60,12 @@ export default function Calculator() {
             created_at: new Date().toISOString(),
         };
 
-        // 1. Save to THIS computer's browser storage
         setLocalHistory((prev) => {
             const updated = [newEntry, ...prev.filter((i) => i.id !== newEntry.id).slice(0, 9)];
             localStorage.setItem('calculator_history_local', JSON.stringify(updated));
             return updated;
         });
 
-        // 2. Silent server logging
         try {
             await fetch('/api/log-activity', {
                 method: 'POST',
@@ -59,17 +86,79 @@ export default function Calculator() {
     };
 
     const handleClick = useCallback((value) => {
-        setInput((prev) => prev + value);
+        const operators = ['+', '-', '×', '÷', '%'];
+
+        setInput((prev) => {
+            if (justCalculated) {
+                setJustCalculated(false);
+                if (operators.includes(value) && result && result !== 'Error') {
+                    // Chain calculation from previous result: e.g. "10" + "+" -> "10+"
+                    setResult('');
+                    return sanitizeExpression(result + value);
+                } else {
+                    // Start new calculation if user typed a number
+                    setResult('');
+                    return value === '.' ? '0.' : sanitizeExpression(value);
+                }
+            }
+
+            if (!prev && operators.includes(value) && value !== '-') return prev;
+
+            const lastChar = prev.slice(-1);
+            if (operators.includes(lastChar) && operators.includes(value)) {
+                return prev.slice(0, -1) + value;
+            }
+            return sanitizeExpression(prev + value);
+        });
+    }, [justCalculated, result]);
+
+    const handleToggleSign = useCallback(() => {
+        setJustCalculated(false);
+        setInput((prev) => {
+            if (!prev) return '-';
+
+            const match = prev.match(/(-?\d+\.?\d*)$/);
+            if (match) {
+                const num = match[0];
+                const startIdx = prev.length - num.length;
+                if (num.startsWith('-')) {
+                    return prev.slice(0, startIdx) + num.slice(1);
+                } else {
+                    return prev.slice(0, startIdx) + '(-' + num + ')';
+                }
+            }
+            return prev + '-';
+        });
     }, []);
 
     const handleClear = useCallback(() => {
         setInput('');
         setResult('');
+        setJustCalculated(false);
     }, []);
 
     const handleDelete = useCallback(() => {
+        setJustCalculated(false);
         setInput((prev) => prev.slice(0, -1));
     }, []);
+
+    const handleInputChange = (e) => {
+        const val = e.target.value;
+        const operators = ['+', '-', '×', '÷', '%', '*', '/'];
+
+        if (justCalculated) {
+            setJustCalculated(false);
+            const lastTyped = val.slice(-1);
+
+            if (operators.includes(lastTyped) && result && result !== 'Error') {
+                setInput(sanitizeExpression(result + lastTyped));
+                setResult('');
+                return;
+            }
+        }
+
+        setInput(sanitizeExpression(val));
+    };
 
     const handleCalculate = useCallback(async () => {
         if (!input) return;
@@ -81,7 +170,6 @@ export default function Calculator() {
             }
             const evalResult = new Function(`return ${sanitized}`)();
 
-            // Limit result strictly to a maximum of 2 decimal places
             let resStr = String(evalResult);
             if (typeof evalResult === 'number' && !isNaN(evalResult) && isFinite(evalResult)) {
                 const rounded = Math.round((evalResult + Number.EPSILON) * 100) / 100;
@@ -89,6 +177,7 @@ export default function Calculator() {
             }
 
             setResult(resStr);
+            setJustCalculated(true);
             await recordCalculation(input, resStr);
         } catch {
             setResult('Error');
@@ -110,10 +199,9 @@ export default function Calculator() {
             const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
             const isCmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
 
-            // Handle Ctrl+C or Cmd+C to copy result without clearing fields
             if (isCmdOrCtrl && key.toLowerCase() === 'c') {
                 if (target?.id === 'calc-input' && window.getSelection().toString()) {
-                    return; // Allow standard highlight copying if text in input is selected
+                    return;
                 }
                 if (!['INPUT', 'TEXTAREA'].includes(target?.tagName) || target?.id === 'calc-input') {
                     e.preventDefault();
@@ -164,7 +252,7 @@ export default function Calculator() {
     const buttons = [
         { label: 'C', onClick: handleClear, type: 'action', title: 'Clear screen (Esc / C)' },
         { label: '⌫', onClick: handleDelete, type: 'action', title: 'Delete last character (Backspace)' },
-        { label: '%', onClick: () => handleClick('%'), type: 'operator', title: 'Percentage (%)' },
+        { label: '+/-', onClick: handleToggleSign, type: 'operator', title: 'Toggle negative sign' },
         { label: '÷', onClick: () => handleClick('÷'), type: 'operator', title: 'Divide (/)' },
         { label: '7', onClick: () => handleClick('7'), type: 'num', title: 'Input 7' },
         { label: '8', onClick: () => handleClick('8'), type: 'num', title: 'Input 8' },
@@ -203,7 +291,7 @@ export default function Calculator() {
                     id="calc-input"
                     type="text"
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={handleInputChange}
                     placeholder="0"
                     title="Type or edit calculation expression"
                     className="w-full bg-transparent text-right text-sm font-mono text-gray-500 dark:text-gray-400 focus:outline-none placeholder:text-gray-400"
@@ -239,7 +327,6 @@ export default function Calculator() {
                 ))}
             </div>
 
-            {/* Local Computer History Drawer */}
             <div className="mt-2 pt-3 border-t border-gray-100 dark:border-slate-800">
                 <div className="flex justify-between items-center py-1">
                     <button
@@ -275,6 +362,7 @@ export default function Calculator() {
                                     onClick={() => {
                                         setInput(item.result);
                                         setResult('');
+                                        setJustCalculated(false);
                                     }}
                                     title={`Click to load result "${item.result}" back into calculator`}
                                     className="p-2.5 bg-gray-50 dark:bg-slate-800/60 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700/60 cursor-pointer active:scale-98 transition flex justify-between items-center"

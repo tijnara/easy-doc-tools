@@ -7,18 +7,17 @@ export default function PdfSplitter() {
     const [fileUrl, setFileUrl] = useState(null);
     const [rangeInput, setRangeInput] = useState('1-5');
     const [totalPages, setTotalPages] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
     const [loading, setLoading] = useState(false);
     const [previewLoading, setPreviewLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
 
-    // Modal Preview & Custom Naming state
     const [previewUrl, setPreviewUrl] = useState(null);
     const [previewBlob, setPreviewBlob] = useState(null);
     const [outputFileName, setOutputFileName] = useState('');
     const [showPreviewModal, setShowPreviewModal] = useState(false);
 
-    // Manage Object URL for uploaded PDF to render visual page cards
     useEffect(() => {
         if (!file) {
             if (fileUrl) URL.revokeObjectURL(fileUrl);
@@ -34,7 +33,6 @@ export default function PdfSplitter() {
         };
     }, [file]);
 
-    // Silent server logging
     const saveToHistory = async (fileName, rangeStr) => {
         try {
             await fetch('/api/log-activity', {
@@ -50,8 +48,7 @@ export default function PdfSplitter() {
         }
     };
 
-    const handleFileSelect = async (e) => {
-        const selected = e.target.files[0];
+    const processPdfFile = async (selected) => {
         if (!selected) return;
 
         const ext = selected.name.split('.').pop().toLowerCase();
@@ -60,7 +57,6 @@ export default function PdfSplitter() {
             setErrorMessage('Word files (.docx) do not store fixed page boundaries in browser memory. Please convert your Word document to PDF using the "Convert" tab first!');
             setFile(null);
             setTotalPages(0);
-            e.target.value = '';
             return;
         }
 
@@ -68,7 +64,6 @@ export default function PdfSplitter() {
             setErrorMessage('Please select a valid PDF file (.pdf).');
             setFile(null);
             setTotalPages(0);
-            e.target.value = '';
             return;
         }
 
@@ -88,14 +83,35 @@ export default function PdfSplitter() {
         } finally {
             setLoading(false);
         }
+    };
 
+    const handleFileSelect = (e) => {
+        const selected = e.target.files[0];
+        if (selected) {
+            processPdfFile(selected);
+        }
         e.target.value = '';
     };
 
-    // Parse currently selected page indices (zero-indexed)
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = () => {
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            processPdfFile(e.dataTransfer.files[0]);
+        }
+    };
+
     const selectedIndices = totalPages > 0 ? parsePageRanges(rangeInput, totalPages) : [];
 
-    // Toggle individual page selection by clicking on its card
     const handleTogglePage = (pageZeroIndex) => {
         const currentSet = new Set(selectedIndices);
         if (currentSet.has(pageZeroIndex)) {
@@ -115,7 +131,6 @@ export default function PdfSplitter() {
         }
     };
 
-    // Open Real Preview Modal
     const handlePreviewSplit = async () => {
         if (!file) return;
 
@@ -145,7 +160,6 @@ export default function PdfSplitter() {
         }
     };
 
-    // Direct Split & Download (keeps uploaded file intact)
     const handleSplitPdf = async () => {
         if (!file) return;
 
@@ -221,7 +235,14 @@ export default function PdfSplitter() {
     };
 
     return (
-        <div className="flex flex-col gap-4 p-5 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
+        <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`flex flex-col gap-4 p-5 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border transition-colors duration-300 ${
+                isDragging ? 'border-blue-500 bg-blue-50/20 dark:bg-blue-950/20 ring-2 ring-blue-500/50' : 'border-gray-100 dark:border-slate-800'
+            }`}
+        >
             <h2 className="text-xl font-bold text-gray-800 dark:text-white" title="Extract exact page ranges, odd pages, or even pages from PDF files">
                 Split PDF
             </h2>
@@ -238,7 +259,6 @@ export default function PdfSplitter() {
                 </div>
             )}
 
-            {/* Page Range Selection Controls */}
             <div className="flex flex-col gap-2 pt-1">
                 <div className="flex justify-between items-center">
                     <label className="text-xs font-bold text-gray-600 dark:text-gray-300">
@@ -260,7 +280,6 @@ export default function PdfSplitter() {
                     className="p-2.5 border rounded-xl text-xs font-mono font-bold text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                 />
 
-                {/* Preset Shortcut Badges */}
                 <div className="flex flex-wrap gap-1.5 pt-1">
                     <button
                         type="button"
@@ -291,14 +310,13 @@ export default function PdfSplitter() {
                 </div>
             </div>
 
-            {/* Upload File Box (Shown when no file is loaded) */}
             {!file && (
                 <label
-                    title="Click to select a PDF file to split"
+                    title="Click or drag a PDF file from your PC"
                     className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800/50 transition mt-1"
                 >
                     <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                        Select PDF File
+                        Select or Drag PDF File
                     </span>
                     <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                         Processed 100% locally in your browser memory
@@ -312,10 +330,8 @@ export default function PdfSplitter() {
                 </label>
             )}
 
-            {/* Active Document Info Bar & Page Cards Visual Grid */}
             {file && (
                 <div className="flex flex-col gap-3">
-                    {/* Header Bar */}
                     <div
                         title={`Full Filename: ${file.name}\nSize: ${(file.size / 1024).toFixed(1)} KB`}
                         className="flex justify-between items-center p-3 bg-gray-50 dark:bg-slate-800/60 rounded-xl border border-gray-100 dark:border-slate-700/60"
@@ -337,7 +353,6 @@ export default function PdfSplitter() {
                         </button>
                     </div>
 
-                    {/* Interactive Visual Page Cards Preview Grid */}
                     {totalPages > 0 && fileUrl && (
                         <div className="flex flex-col gap-2.5 bg-gray-50 dark:bg-slate-950/80 p-3.5 rounded-2xl border border-gray-200 dark:border-slate-800">
                             <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
@@ -360,7 +375,6 @@ export default function PdfSplitter() {
                                                     : 'border-gray-200 dark:border-slate-800 opacity-60 grayscale-[30%]'
                                             }`}
                                         >
-                                            {/* Page Number & Status Overlay */}
                                             <div className="absolute top-2 left-2 right-2 z-10 flex justify-between items-center pointer-events-none">
                                                 <span className="font-mono font-extrabold text-[11px] bg-slate-900/80 text-white dark:bg-slate-800/90 dark:text-gray-100 px-2 py-0.5 rounded-full shadow-xs">
                                                     Page {pageNum}
@@ -377,7 +391,6 @@ export default function PdfSplitter() {
                                                 </span>
                                             </div>
 
-                                            {/* Page Thumbnail View */}
                                             <div className="relative w-full aspect-[3/4] bg-gray-100 dark:bg-slate-950 flex items-center justify-center overflow-hidden border-b border-gray-100 dark:border-slate-800/60">
                                                 <iframe
                                                     src={`${fileUrl}#page=${pageNum}&toolbar=0&navpanes=0&scrollbar=0`}
@@ -386,7 +399,6 @@ export default function PdfSplitter() {
                                                 />
                                             </div>
 
-                                            {/* Card Label */}
                                             <div className="p-2 bg-white dark:bg-slate-900 text-center">
                                                 <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
                                                     Page {pageNum}
@@ -401,9 +413,7 @@ export default function PdfSplitter() {
                 </div>
             )}
 
-            {/* Action Buttons Group */}
             <div className="flex flex-col gap-2 pt-1">
-                {/* Real Modal Preview Button */}
                 <button
                     onClick={handlePreviewSplit}
                     disabled={previewLoading || !file || selectedIndices.length === 0}
@@ -415,7 +425,6 @@ export default function PdfSplitter() {
                     <span>{previewLoading ? 'Generating Preview...' : 'Preview Extracted PDF'}</span>
                 </button>
 
-                {/* Extract & Download PDF Button */}
                 <button
                     onClick={handleSplitPdf}
                     disabled={loading || !file || selectedIndices.length === 0}
@@ -428,11 +437,9 @@ export default function PdfSplitter() {
                 </button>
             </div>
 
-            {/* Real Full-Screen Extracted Document Preview Modal */}
             {showPreviewModal && previewUrl && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
                     <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 w-[96vw] h-[92vh] max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-                        {/* Modal Header */}
                         <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-950 shrink-0">
                             <div className="flex items-center gap-2">
                                 <span className="font-mono font-bold text-xs bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-md border border-blue-200 dark:border-blue-900/50">
@@ -451,7 +458,6 @@ export default function PdfSplitter() {
                             </button>
                         </div>
 
-                        {/* PDF Preview Frame */}
                         <div className="p-2 sm:p-3 bg-gray-100 dark:bg-slate-950 flex-1 w-full h-full min-h-0 overflow-hidden">
                             <iframe
                                 src={`${previewUrl}#view=FitH`}
@@ -460,7 +466,6 @@ export default function PdfSplitter() {
                             />
                         </div>
 
-                        {/* File Naming & Download Controls */}
                         <div className="px-4 py-3 border-t border-gray-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center bg-gray-50 dark:bg-slate-950 gap-3 shrink-0">
                             <div className="flex items-center gap-2 w-full sm:w-auto">
                                 <label className="text-xs font-bold text-gray-600 dark:text-gray-300 shrink-0">
