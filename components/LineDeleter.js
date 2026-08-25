@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { removeExtraSpaces } from '../lib/textUtils';
+import { removeExtraSpaces, cleanPastedText } from '../lib/textUtils';
 
 export default function LineDeleter() {
     const [input, setInput] = useState('');
@@ -48,23 +48,16 @@ export default function LineDeleter() {
         localStorage.setItem('clean_text_input', newValue);
     };
 
-    // Intercept paste: Strips Outlook PUA icon artifacts ( / \uE000-\uF8FF) and stars while preserving 100% of original layout
+    // Intercept paste: Reads plain text directly to guarantee 100% original line breaks & spacing
     const handlePaste = (e) => {
         e.preventDefault();
 
-        // 1. Get raw plain text directly (preserves 100% of original line breaks & spacing)
+        // Reading plain text directly prevents HTML parsers from collapsing paragraphs into single lines
         const rawText = e.clipboardData.getData('text/plain') || '';
 
-        // 2. Wipe Outlook PUA signature glyphs (\uE000-\uF8FF including ), stars (★), and dingbats
-        let cleanText = rawText.replace(/[\uE000-\uF8FF★☆⭐🌟✨✪✩✰⭒\u2600-\u26FF\u2700-\u27BF]+/g, '');
+        // Strip Outlook glyphs (), stars (★), AI disclaimers, and logo descriptions without altering layout
+        const cleanText = cleanPastedText(rawText);
 
-        // 3. Collapse extra horizontal spacing left behind on the same line without destroying line breaks (\n)
-        cleanText = cleanText
-            .split('\n')
-            .map((line) => line.replace(/[ \t]{2,}/g, ' '))
-            .join('\n');
-
-        // 4. Insert cleanly at user cursor position
         const target = e.target;
         const start = target.selectionStart;
         const end = target.selectionEnd;
@@ -77,7 +70,7 @@ export default function LineDeleter() {
             target.selectionStart = target.selectionEnd = start + cleanText.length;
         }, 0);
 
-        showToast('Pasted in Original Layout (Logo Glyphs Wiped)!');
+        showToast('Pasted (Original Layout Preserved)!');
     };
 
     const handleUndo = () => {
