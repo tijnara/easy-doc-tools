@@ -48,45 +48,37 @@ export default function LineDeleter() {
         localStorage.setItem('clean_text_input', newValue);
     };
 
-    // Intercept paste: Remove ONLY image artifacts (★), keeping exact original layout, spacing, and line breaks
+    // Intercept paste: Use direct text/plain to preserve exact original layout, line breaks & remove all star variants
     const handlePaste = (e) => {
         e.preventDefault();
-        let pastedText = '';
 
-        const htmlData = e.clipboardData.getData('text/html');
-        if (htmlData) {
-            try {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(htmlData, 'text/html');
+        // 1. Get raw plain text directly (preserves 100% of original line breaks & spacing)
+        const rawText = e.clipboardData.getData('text/plain') || '';
 
-                // Remove HTML image/graphics tags
-                doc.querySelectorAll('img, svg, picture, canvas, shape, [style*="background-image"]').forEach((el) => el.remove());
-                pastedText = doc.body.innerText || doc.body.textContent || '';
-            } catch (err) {
-                pastedText = e.clipboardData.getData('text/plain') || '';
-            }
-        } else {
-            pastedText = e.clipboardData.getData('text/plain') || '';
-        }
+        // 2. Comprehensive star regex: Covers black star (★), white star (☆), star emojis (⭐),
+        // and all Outlook/Word symbol glyph ranges (\u2600-\u26FF & \u2700-\u27BF)
+        let cleanText = rawText.replace(/[★☆⭐🌟✨✪✩✰⭒\u2600-\u26FF\u2700-\u27BF]+/g, '');
 
-        // Remove star image artifacts (★) only, without rearranging lines or trimming spaces
-        const cleanPastedText = pastedText.replace(/[★☆\u2605\u2606]+/g, '');
+        // 3. Clean up multiple horizontal spaces left where stars were deleted, preserving line breaks (\n)
+        cleanText = cleanText
+            .split('\n')
+            .map((line) => line.replace(/[ \t]{2,}/g, ' '))
+            .join('\n');
 
-        // Insert at cursor position while preserving original form
+        // 4. Insert cleanly at user cursor position
         const target = e.target;
         const start = target.selectionStart;
         const end = target.selectionEnd;
         const currentVal = input;
 
-        const newValue = currentVal.substring(0, start) + cleanPastedText + currentVal.substring(end);
+        const newValue = currentVal.substring(0, start) + cleanText + currentVal.substring(end);
         handleInputChange(newValue);
 
-        // Restore cursor position immediately after pasted content
         setTimeout(() => {
-            target.selectionStart = target.selectionEnd = start + cleanPastedText.length;
+            target.selectionStart = target.selectionEnd = start + cleanText.length;
         }, 0);
 
-        showToast('Pasted (Original Form Preserved)!');
+        showToast('Pasted in Original Layout (Stars Removed)!');
     };
 
     const handleUndo = () => {
