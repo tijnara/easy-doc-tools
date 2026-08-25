@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { convertImagesToPdf, convertTextToPdf } from '../lib/pdfUtils';
 
 export default function PdfConverter() {
@@ -7,6 +7,8 @@ export default function PdfConverter() {
     const [images, setImages] = useState([]);
     const [officeFile, setOfficeFile] = useState(null);
     const [textInput, setTextInput] = useState('');
+    const [textFileName, setTextFileName] = useState('');
+
     const [isDragging, setIsDragging] = useState(false);
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
@@ -14,10 +16,27 @@ export default function PdfConverter() {
     const [liveCredits, setLiveCredits] = useState(null);
     const [fetchingCredits, setFetchingCredits] = useState(true);
 
+    // Modal Preview State
     const [previewUrl, setPreviewUrl] = useState(null);
     const [previewBlob, setPreviewBlob] = useState(null);
     const [outputFileName, setOutputFileName] = useState('');
     const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+    // Image Card Object URLs
+    const [imageUrls, setImageUrls] = useState([]);
+    const imgUrlsRef = useRef([]);
+
+    useEffect(() => {
+        imgUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+
+        const newUrls = images.map((img) => URL.createObjectURL(img));
+        imgUrlsRef.current = newUrls;
+        setImageUrls(newUrls);
+
+        return () => {
+            newUrls.forEach((url) => URL.revokeObjectURL(url));
+        };
+    }, [images]);
 
     const saveToHistory = async (fileName, typeLabel) => {
         try {
@@ -125,7 +144,7 @@ export default function PdfConverter() {
 
         if (isImage(firstFile)) {
             const validImages = selected.filter(isImage);
-            setImages(validImages);
+            setImages((prev) => [...prev, ...validImages]);
             if (mode !== 'image') {
                 setMode('image');
                 showToast(`↗ Switched to Image tab for ${validImages.length} image(s)`);
@@ -137,6 +156,7 @@ export default function PdfConverter() {
             const reader = new FileReader();
             reader.onload = (e) => {
                 setTextInput(e.target.result);
+                setTextFileName(firstFile.name);
                 if (mode !== 'text') {
                     setMode('text');
                     showToast(`↗ Switched to Text tab for "${firstFile.name}"`);
@@ -164,6 +184,23 @@ export default function PdfConverter() {
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             handleSmartFileSelect(e.dataTransfer.files);
         }
+    };
+
+    const removeImage = (index) => {
+        setImages((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const clearAllImages = () => {
+        setImages([]);
+    };
+
+    const clearOfficeFile = () => {
+        setOfficeFile(null);
+    };
+
+    const clearTextFile = () => {
+        setTextInput('');
+        setTextFileName('');
     };
 
     const handleConvert = async () => {
@@ -220,7 +257,7 @@ export default function PdfConverter() {
                 }
                 const pdfBytes = await convertTextToPdf(textInput);
                 blob = new Blob([pdfBytes], { type: 'application/pdf' });
-                defaultName = 'converted_text_document';
+                defaultName = textFileName ? `${textFileName.replace(/\.[^/.]+$/, '')}_converted` : 'converted_text_document';
             }
 
             const url = URL.createObjectURL(blob);
@@ -326,6 +363,7 @@ export default function PdfConverter() {
                 </div>
             )}
 
+            {/* Mode Switcher Tabs */}
             <div className="grid grid-cols-3 bg-gray-100 dark:bg-slate-800/80 p-1 rounded-xl gap-1">
                 <button
                     onClick={() => {
@@ -371,6 +409,7 @@ export default function PdfConverter() {
                 </button>
             </div>
 
+            {/* OFFICE MODE */}
             {mode === 'office' && (
                 <div className="flex flex-col gap-3">
                     <label
@@ -385,17 +424,71 @@ export default function PdfConverter() {
                             className="hidden"
                         />
                     </label>
+
+                    {/* Office File Document Card */}
                     {officeFile && (
-                        <div
-                            title={`Full Filename: ${officeFile.name}\nFile Size: ${(officeFile.size / 1024).toFixed(1)} KB`}
-                            className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-xl border border-gray-100 dark:border-slate-700/60 cursor-pointer"
-                        >
-                            <p className="text-xs font-bold text-gray-700 dark:text-gray-300 truncate">📄 {officeFile.name}</p>
+                        <div className="flex flex-col gap-2 bg-gray-50 dark:bg-slate-950/80 p-3.5 rounded-2xl border border-gray-200 dark:border-slate-800">
+                            <div className="flex justify-between items-center text-xs font-bold text-gray-500 dark:text-gray-400">
+                                <span>Loaded Office Document</span>
+                                <button
+                                    onClick={clearOfficeFile}
+                                    className="text-xs text-red-500 font-bold hover:text-red-700 transition"
+                                >
+                                    Remove File
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 pt-1">
+                                <div
+                                    title={officeFile.name}
+                                    className="relative flex flex-col bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all select-none group"
+                                >
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-max max-w-[220px] bg-slate-950 dark:bg-slate-800 text-white dark:text-gray-100 text-[11px] font-medium p-2.5 rounded-xl shadow-2xl border border-slate-800 dark:border-slate-700 z-30 pointer-events-none text-center break-words leading-tight animate-fadeIn">
+                                        {officeFile.name}
+                                    </div>
+
+                                    <div className="absolute top-2 left-2 right-2 z-10 flex justify-between items-center pointer-events-none">
+                                        <span className="font-mono font-extrabold text-[11px] bg-slate-900/80 text-white dark:bg-slate-800/90 dark:text-gray-100 px-2 py-0.5 rounded-full shadow-xs">
+                                            #1
+                                        </span>
+                                        <button
+                                            onClick={clearOfficeFile}
+                                            title="Remove document card"
+                                            className="w-6 h-6 rounded-full bg-red-600/90 hover:bg-red-700 text-white transition flex items-center justify-center text-[10px] font-bold shadow-xs pointer-events-auto"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+
+                                    {/* Document File Metadata Card */}
+                                    <div className="relative w-full aspect-[3/4] bg-gray-100 dark:bg-slate-950 flex flex-col items-center justify-center p-3 text-center border-b border-gray-100 dark:border-slate-800/60 gap-1.5">
+                                        <span className="text-4xl">
+                                            {officeFile.name.endsWith('.xlsx') || officeFile.name.endsWith('.xls') ? '📊' : '📝'}
+                                        </span>
+                                        <span className="text-[10px] font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-900/50 uppercase font-mono">
+                                            {officeFile.name.split('.').pop()}
+                                        </span>
+                                        <span className="text-[9px] text-gray-400 font-medium italic mt-1 px-1">
+                                            Preview renders in modal upon conversion
+                                        </span>
+                                    </div>
+
+                                    <div className="p-2.5 bg-white dark:bg-slate-900 flex flex-col justify-center">
+                                        <p className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate text-center">
+                                            {officeFile.name}
+                                        </p>
+                                        <span className="text-[10px] font-mono text-gray-400 dark:text-gray-500 text-center mt-0.5">
+                                            {(officeFile.size / 1024).toFixed(0)} KB
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
             )}
 
+            {/* IMAGE MODE */}
             {mode === 'image' && (
                 <div className="flex flex-col gap-3">
                     <label
@@ -406,35 +499,84 @@ export default function PdfConverter() {
                         <input
                             type="file"
                             multiple
+                            accept="image/*, .png, .jpg, .jpeg, .webp, .gif, .bmp"
                             onChange={(e) => handleSmartFileSelect(e.target.files)}
                             className="hidden"
                         />
                     </label>
 
+                    {/* Image Cards Visual Preview Grid */}
                     {images.length > 0 && (
-                        <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                Selected Images ({images.length}):
-                            </p>
-                            {images.map((img, idx) => (
-                                <div
-                                    key={idx}
-                                    title={`Full Filename: ${img.name}\nSize: ${(img.size / 1024).toFixed(1)} KB`}
-                                    className="p-2 bg-gray-50 dark:bg-slate-800/60 rounded-lg border border-gray-100 dark:border-slate-700/60 flex items-center justify-between cursor-pointer"
+                        <div className="flex flex-col gap-3 bg-gray-50 dark:bg-slate-950/80 p-4 rounded-2xl border border-gray-200 dark:border-slate-800">
+                            <div className="flex justify-between items-center bg-blue-50/70 dark:bg-blue-950/40 p-2.5 rounded-xl border border-blue-100 dark:border-blue-900/40 text-xs font-medium text-blue-800 dark:text-blue-300">
+                                <span>Selected Images ({images.length}):</span>
+                                <button
+                                    onClick={clearAllImages}
+                                    title="Remove all image cards"
+                                    className="px-2 py-1 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 text-red-600 dark:text-red-400 rounded-lg text-[10px] font-bold transition border border-red-200 dark:border-red-900/50"
                                 >
-                                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">
-                                        🖼️ {img.name}
-                                    </span>
-                                    <span className="text-[10px] text-gray-400 font-mono">
-                                        {(img.size / 1024).toFixed(0)} KB
-                                    </span>
-                                </div>
-                            ))}
+                                    Clear All
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 pt-1 max-h-80 overflow-y-auto pr-1">
+                                {images.map((img, idx) => {
+                                    const previewImgUrl = imageUrls[idx];
+
+                                    return (
+                                        <div
+                                            key={idx}
+                                            title={img.name}
+                                            className="relative flex flex-col bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all select-none group"
+                                        >
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-max max-w-[220px] bg-slate-950 dark:bg-slate-800 text-white dark:text-gray-100 text-[11px] font-medium p-2.5 rounded-xl shadow-2xl border border-slate-800 dark:border-slate-700 z-30 pointer-events-none text-center break-words leading-tight animate-fadeIn">
+                                                {img.name}
+                                            </div>
+
+                                            <div className="absolute top-2 left-2 right-2 z-10 flex justify-between items-center pointer-events-none">
+                                                <span className="font-mono font-extrabold text-[11px] bg-slate-900/80 text-white dark:bg-slate-800/90 dark:text-gray-100 px-2 py-0.5 rounded-full shadow-xs">
+                                                    #{idx + 1}
+                                                </span>
+                                                <button
+                                                    onClick={() => removeImage(idx)}
+                                                    title="Remove image card"
+                                                    className="w-6 h-6 rounded-full bg-red-600/90 hover:bg-red-700 text-white transition flex items-center justify-center text-[10px] font-bold shadow-xs pointer-events-auto"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+
+                                            {/* Image Page Preview Box */}
+                                            <div className="relative w-full aspect-[3/4] bg-gray-100 dark:bg-slate-950 flex items-center justify-center p-1.5 overflow-hidden border-b border-gray-100 dark:border-slate-800/60">
+                                                {previewImgUrl ? (
+                                                    <img
+                                                        src={previewImgUrl}
+                                                        alt={img.name}
+                                                        className="w-full h-full object-contain bg-white dark:bg-slate-900 rounded shadow-xs"
+                                                    />
+                                                ) : (
+                                                    <span className="text-3xl">🖼️</span>
+                                                )}
+                                            </div>
+
+                                            <div className="p-2.5 bg-white dark:bg-slate-900 flex flex-col justify-center">
+                                                <p className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate text-center">
+                                                    {img.name}
+                                                </p>
+                                                <span className="text-[10px] font-mono text-gray-400 dark:text-gray-500 text-center mt-0.5">
+                                                    {(img.size / 1024).toFixed(0)} KB
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     )}
                 </div>
             )}
 
+            {/* TEXT MODE */}
             {mode === 'text' && (
                 <div className="flex flex-col gap-3">
                     <textarea
@@ -447,6 +589,59 @@ export default function PdfConverter() {
                             setErrorMessage('');
                         }}
                     />
+
+                    {/* Text Page Document Preview Card */}
+                    {textInput && (
+                        <div className="flex flex-col gap-2 bg-gray-50 dark:bg-slate-950/80 p-3.5 rounded-2xl border border-gray-200 dark:border-slate-800">
+                            <div className="flex justify-between items-center text-xs font-bold text-gray-500 dark:text-gray-400">
+                                <span>Text Content Page Preview</span>
+                                <button
+                                    onClick={clearTextFile}
+                                    className="text-xs text-red-500 font-bold hover:text-red-700 transition"
+                                >
+                                    Clear Text
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 pt-1">
+                                <div
+                                    title={textFileName || 'Raw Text Content'}
+                                    className="relative flex flex-col bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all select-none group"
+                                >
+                                    <div className="absolute top-2 left-2 right-2 z-10 flex justify-between items-center pointer-events-none">
+                                        <span className="font-mono font-extrabold text-[11px] bg-slate-900/80 text-white dark:bg-slate-800/90 dark:text-gray-100 px-2 py-0.5 rounded-full shadow-xs">
+                                            #1
+                                        </span>
+                                        <button
+                                            onClick={clearTextFile}
+                                            title="Clear text content card"
+                                            className="w-6 h-6 rounded-full bg-red-600/90 hover:bg-red-700 text-white transition flex items-center justify-center text-[10px] font-bold shadow-xs pointer-events-auto"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+
+                                    {/* Mini Live Document Page View containing actual typed text snippet */}
+                                    <div className="relative w-full aspect-[3/4] bg-gray-100 dark:bg-slate-950 flex items-center justify-center p-2.5 overflow-hidden border-b border-gray-100 dark:border-slate-800/60">
+                                        <div className="w-full h-full bg-white dark:bg-slate-900 rounded-lg shadow-xs border border-gray-200 dark:border-slate-800 p-2 flex flex-col overflow-hidden">
+                                            <div className="text-[7.5px] font-mono text-gray-700 dark:text-gray-300 break-words line-clamp-[12] leading-snug select-none opacity-90 whitespace-pre-wrap">
+                                                {textInput}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-2.5 bg-white dark:bg-slate-900 flex flex-col justify-center">
+                                        <p className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate text-center">
+                                            {textFileName || 'Text Document'}
+                                        </p>
+                                        <span className="text-[10px] font-mono text-gray-400 dark:text-gray-500 text-center mt-0.5">
+                                            {textInput.split(/\s+/).filter(Boolean).length} Words
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <label
                         title="Click to import content from a text file (.txt)"
