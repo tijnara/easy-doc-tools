@@ -48,22 +48,19 @@ export default function LineDeleter() {
         localStorage.setItem('clean_text_input', newValue);
     };
 
-    // Intercept paste: Reads plain text directly to guarantee 100% original line breaks & spacing
+    // Intercept paste: Derives selection indices directly from DOM target value to replace selected text 100% cleanly
     const handlePaste = (e) => {
         e.preventDefault();
-
-        // Reading plain text directly prevents HTML parsers from collapsing paragraphs into single lines
-        const rawText = e.clipboardData.getData('text/plain') || '';
-
-        // Strip Outlook glyphs (), stars (★), AI disclaimers, and logo descriptions without altering layout
-        const cleanText = cleanPastedText(rawText);
 
         const target = e.target;
         const start = target.selectionStart;
         const end = target.selectionEnd;
-        const currentVal = input;
+        const domValue = target.value; // Read directly from DOM element to avoid selection range mismatch
 
-        const newValue = currentVal.substring(0, start) + cleanText + currentVal.substring(end);
+        const rawText = e.clipboardData.getData('text/plain') || '';
+        const cleanText = cleanPastedText(rawText);
+
+        const newValue = domValue.substring(0, start) + cleanText + domValue.substring(end);
         handleInputChange(newValue);
 
         setTimeout(() => {
@@ -212,18 +209,6 @@ export default function LineDeleter() {
         await saveToHistory(cleanedText);
     };
 
-    const handleStripBulletsAndCopy = async () => {
-        if (!input.trim()) return;
-
-        const cleanedText = removeExtraSpaces(input, 'strip-bullets');
-        handleInputChange(cleanedText);
-
-        navigator.clipboard.writeText(cleanedText);
-        showToast('Bullets & Stars Removed!');
-
-        await saveToHistory(cleanedText);
-    };
-
     const handleClear = () => {
         if (!input) return;
         handleInputChange('');
@@ -301,7 +286,7 @@ export default function LineDeleter() {
             >
                 <textarea
                     className="w-full h-full p-3 focus:outline-none focus:ring-2 focus:ring-blue-500/40 text-base text-gray-800 dark:text-gray-100 bg-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-none"
-                    placeholder="Paste messy text with extra line spaces or bullet stars here..."
+                    placeholder="Paste messy text with extra line spaces here..."
                     value={input}
                     onChange={(e) => handleInputChange(e.target.value)}
                     onKeyDown={handleKeyDown}
@@ -322,29 +307,21 @@ export default function LineDeleter() {
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
                 <button
                     onClick={handleCleanAndCopy}
-                    className="sm:col-span-4 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold active:scale-95 transition shadow-sm shadow-blue-500/20 text-xs sm:text-sm"
+                    className="sm:col-span-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold active:scale-95 transition shadow-sm shadow-blue-500/20 text-sm"
                 >
                     Remove Blank Lines
                 </button>
 
                 <button
-                    onClick={handleStripBulletsAndCopy}
-                    title="Remove leading star icons (★), dots (•), and dashes from lines"
-                    className="sm:col-span-4 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold active:scale-95 transition shadow-sm shadow-indigo-500/20 text-xs sm:text-sm"
-                >
-                    Strip Bullets & Stars
-                </button>
-
-                <button
                     onClick={handleCopyOnly}
-                    className="sm:col-span-2 py-3.5 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 rounded-xl font-semibold active:scale-95 transition text-xs sm:text-sm"
+                    className="sm:col-span-5 py-3.5 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 rounded-xl font-semibold active:scale-95 transition text-sm"
                 >
                     Copy
                 </button>
 
                 <button
                     onClick={handleClear}
-                    className="sm:col-span-2 py-3.5 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-xl font-semibold active:scale-95 transition border border-red-100 dark:border-red-900/40 text-xs sm:text-sm"
+                    className="sm:col-span-2 py-3.5 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-xl font-semibold active:scale-95 transition border border-red-100 dark:border-red-900/40 text-sm"
                 >
                     Clear
                 </button>
