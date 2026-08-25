@@ -5,19 +5,36 @@ export default function ActiveHeartbeat() {
     useEffect(() => {
         const pingServer = async () => {
             try {
-                await fetch('/api/heartbeat', { method: 'HEAD' });
+                await fetch('/api/heartbeat', {
+                    method: 'GET',
+                    headers: { 'Cache-Control': 'no-cache' }
+                });
             } catch (err) {
-                // Silently ignore network blips
+                // Silently ignore temporary network blips
             }
         };
 
         // Ping immediately on tab load
         pingServer();
 
-        // Ping every 60 seconds unconditionally for as long as Workspace Kit is open
-        const interval = setInterval(pingServer, 60000);
+        // Send a heartbeat every 15 seconds to stay active within server timeouts
+        const interval = setInterval(pingServer, 15000);
 
-        return () => clearInterval(interval);
+        // Instantly ping whenever the user returns or refocuses the tab
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                pingServer();
+            }
+        };
+
+        window.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', pingServer);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('focus', pingServer);
+        };
     }, []);
 
     return null;
