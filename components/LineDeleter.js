@@ -48,7 +48,7 @@ export default function LineDeleter() {
         localStorage.setItem('clean_text_input', newValue);
     };
 
-    // Intercept paste events: Strip HTML images/graphics and clean leading stars/bullets automatically
+    // Intercept paste: Remove ONLY image artifacts (★), keeping exact original layout, spacing, and line breaks
     const handlePaste = (e) => {
         e.preventDefault();
         let pastedText = '';
@@ -59,8 +59,8 @@ export default function LineDeleter() {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(htmlData, 'text/html');
 
-                // Strip all image, svg, and picture tags so logo alt-texts are excluded
-                doc.querySelectorAll('img, svg, picture, canvas').forEach((el) => el.remove());
+                // Remove HTML image/graphics tags
+                doc.querySelectorAll('img, svg, picture, canvas, shape, [style*="background-image"]').forEach((el) => el.remove());
                 pastedText = doc.body.innerText || doc.body.textContent || '';
             } catch (err) {
                 pastedText = e.clipboardData.getData('text/plain') || '';
@@ -69,15 +69,24 @@ export default function LineDeleter() {
             pastedText = e.clipboardData.getData('text/plain') || '';
         }
 
-        // Strip leading star icons (★), bullet symbols, and blank lines
-        const pureTextOnly = pastedText
-            .split('\n')
-            .map((line) => line.replace(/^[\s★☆•*▪\-►–—\u2022\u2605\u25cf\u25aa\u25a0]+/g, '').trim())
-            .filter((line) => line.length > 0)
-            .join('\n');
+        // Remove star image artifacts (★) only, without rearranging lines or trimming spaces
+        const cleanPastedText = pastedText.replace(/[★☆\u2605\u2606]+/g, '');
 
-        handleInputChange(pureTextOnly);
-        showToast('Pasted Pure Text Only!');
+        // Insert at cursor position while preserving original form
+        const target = e.target;
+        const start = target.selectionStart;
+        const end = target.selectionEnd;
+        const currentVal = input;
+
+        const newValue = currentVal.substring(0, start) + cleanPastedText + currentVal.substring(end);
+        handleInputChange(newValue);
+
+        // Restore cursor position immediately after pasted content
+        setTimeout(() => {
+            target.selectionStart = target.selectionEnd = start + cleanPastedText.length;
+        }, 0);
+
+        showToast('Pasted (Original Form Preserved)!');
     };
 
     const handleUndo = () => {
