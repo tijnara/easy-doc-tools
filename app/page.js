@@ -148,6 +148,11 @@ const THEMES = [
     }
 ];
 
+const DEFAULT_COLUMNS = {
+    left: ['tools'],
+    right: ['calculator', 'notepad']
+};
+
 export default function Home() {
     const [showSplash, setShowSplash] = useState(false);
     const [activeTab, setActiveTab] = useState('cleaner');
@@ -155,6 +160,11 @@ export default function Home() {
     const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState(1);
+
+    // Two-Column Drag-and-Drop Layout State
+    const [columns, setColumns] = useState(DEFAULT_COLUMNS);
+    const [draggedItem, setDraggedItem] = useState(null);
+    const [dragOverTarget, setDragOverTarget] = useState(null);
 
     const themeMenuRef = useRef(null);
 
@@ -172,7 +182,6 @@ export default function Home() {
         }
     };
 
-    // Restore splash screen, active tab, and last used theme on mount
     useEffect(() => {
         const savedThemeId = localStorage.getItem('workspace_theme_id') || localStorage.getItem('theme') || 'dark';
         applyTheme(savedThemeId);
@@ -187,10 +196,22 @@ export default function Home() {
             setActiveTab(savedTab);
         }
 
+        const savedColumns = localStorage.getItem('workspace_columns_layout');
+        if (savedColumns) {
+            try {
+                const parsed = JSON.parse(savedColumns);
+                if (parsed && typeof parsed === 'object' && Array.isArray(parsed.left) && Array.isArray(parsed.right)) {
+                    setColumns(parsed);
+                }
+            } catch (e) {
+                // Keep default layout on parse error
+            }
+        }
+
         setIsMounted(true);
     }, []);
 
-    // Poll active online users count from heartbeat API
+    // Poll active online users count
     useEffect(() => {
         const fetchOnlineUsers = async () => {
             try {
@@ -200,7 +221,7 @@ export default function Home() {
                     setOnlineUsers(data.activeUsers || data.count || 1);
                 }
             } catch (err) {
-                // Silently retain last known state
+                // Keep default state on error
             }
         };
 
@@ -209,7 +230,6 @@ export default function Home() {
         return () => clearInterval(interval);
     }, []);
 
-    // Close theme menu on outside click
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (themeMenuRef.current && !themeMenuRef.current.contains(e.target)) {
@@ -230,9 +250,203 @@ export default function Home() {
         sessionStorage.setItem('has_seen_splash', 'true');
     };
 
+    // Drag and Drop Handlers
+    const handleDragStart = (e, widgetId, colKey, index) => {
+        setDraggedItem({ widgetId, colKey, index });
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e, colKey, targetIndex = null) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        setDragOverTarget({ colKey, targetIndex });
+    };
+
+    const handleDrop = (e, targetColKey, targetIndex = null) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!draggedItem) return;
+
+        const { widgetId, colKey: sourceColKey, index: sourceIndex } = draggedItem;
+
+        const updatedColumns = {
+            left: [...columns.left],
+            right: [...columns.right]
+        };
+
+        // Remove from source column
+        updatedColumns[sourceColKey].splice(sourceIndex, 1);
+
+        // Insert into target column position
+        if (targetIndex !== null && targetIndex !== undefined) {
+            updatedColumns[targetColKey].splice(targetIndex, 0, widgetId);
+        } else {
+            updatedColumns[targetColKey].push(widgetId);
+        }
+
+        setColumns(updatedColumns);
+        localStorage.setItem('workspace_columns_layout', JSON.stringify(updatedColumns));
+
+        setDraggedItem(null);
+        setDragOverTarget(null);
+    };
+
+    const handleResetLayout = () => {
+        setColumns(DEFAULT_COLUMNS);
+        localStorage.removeItem('workspace_columns_layout');
+    };
+
     if (!isMounted) return null;
 
     const activeThemeObj = THEMES.find((t) => t.id === currentTheme) || THEMES[0];
+
+    // Helper to render widget contents
+    const renderWidgetContent = (widgetId) => {
+        switch (widgetId) {
+            case 'tools':
+                return (
+                    <div className="flex flex-col gap-4 w-full">
+                        <div className="grid grid-cols-3 sm:grid-cols-6 bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1">
+                            <button
+                                onClick={() => handleTabChange('cleaner')}
+                                className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                    activeTab === 'cleaner'
+                                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                }`}
+                            >
+                                Clean Text
+                            </button>
+                            <button
+                                onClick={() => handleTabChange('converter')}
+                                className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                    activeTab === 'converter'
+                                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                }`}
+                            >
+                                Convert
+                            </button>
+                            <button
+                                onClick={() => handleTabChange('merger')}
+                                className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                    activeTab === 'merger'
+                                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                }`}
+                            >
+                                Merge
+                            </button>
+                            <button
+                                onClick={() => handleTabChange('splitpdf')}
+                                className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                    activeTab === 'splitpdf'
+                                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                }`}
+                            >
+                                Split PDF
+                            </button>
+                            <button
+                                onClick={() => handleTabChange('duedate')}
+                                className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                    activeTab === 'duedate'
+                                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                }`}
+                            >
+                                Due Date
+                            </button>
+                            <button
+                                onClick={() => handleTabChange('nrd')}
+                                className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                    activeTab === 'nrd'
+                                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                }`}
+                            >
+                                NRD Calc
+                            </button>
+                        </div>
+
+                        {activeTab === 'cleaner' && <LineDeleter />}
+                        {activeTab === 'converter' && <PdfConverter />}
+                        {activeTab === 'merger' && <PdfMerger />}
+                        {activeTab === 'splitpdf' && <PdfSplitter />}
+                        {activeTab === 'duedate' && <DueDateCalculator />}
+                        {activeTab === 'nrd' && <NrdCalculator />}
+                    </div>
+                );
+            case 'calculator':
+                return <Calculator />;
+            case 'notepad':
+                return <Notepad />;
+            default:
+                return null;
+        }
+    };
+
+    const renderColumn = (colKey, widgetList) => {
+        const isColumnOver = dragOverTarget?.colKey === colKey && dragOverTarget?.targetIndex === null;
+
+        return (
+            <div
+                onDragOver={(e) => handleDragOver(e, colKey, null)}
+                onDrop={(e) => handleDrop(e, colKey, null)}
+                className={`flex flex-col gap-6 min-h-[350px] p-2 rounded-3xl transition-all duration-200 border-2 border-dashed ${
+                    isColumnOver
+                        ? 'border-blue-500 bg-blue-500/5'
+                        : 'border-transparent hover:border-gray-300/40 dark:hover:border-slate-800/60'
+                }`}
+            >
+                {widgetList.map((widgetId, index) => {
+                    const isDragging = draggedItem?.widgetId === widgetId;
+                    const isTargetOver = dragOverTarget?.colKey === colKey && dragOverTarget?.targetIndex === index;
+
+                    return (
+                        <div
+                            key={widgetId}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, widgetId, colKey, index)}
+                            onDragOver={(e) => handleDragOver(e, colKey, index)}
+                            onDrop={(e) => handleDrop(e, colKey, index)}
+                            className={`transition-all duration-200 rounded-3xl relative group ${
+                                isDragging ? 'opacity-30 scale-95' : 'opacity-100'
+                            } ${isTargetOver ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-slate-950' : ''}`}
+                        >
+                            {/* Drag Handle Bar */}
+                            <div
+                                className="flex items-center justify-between px-3 py-1.5 mb-1 text-[11px] font-bold text-gray-400 dark:text-gray-500 opacity-60 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing select-none"
+                                title="Click & Drag to reposition this tool"
+                            >
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-sm leading-none">⋮⋮</span>
+                                    <span className="uppercase tracking-wider">
+                                        {widgetId === 'tools'
+                                            ? 'Main Tools'
+                                            : widgetId === 'calculator'
+                                                ? 'Basic Calculator'
+                                                : 'Quick Note'}
+                                    </span>
+                                </div>
+                                <span className="text-[10px] opacity-70">Drag to move</span>
+                            </div>
+
+                            {/* Tool Body */}
+                            {renderWidgetContent(widgetId)}
+                        </div>
+                    );
+                })}
+
+                {widgetList.length === 0 && (
+                    <div className="flex items-center justify-center h-48 border-2 border-dashed border-gray-300/60 dark:border-slate-800/80 rounded-3xl text-xs font-bold text-gray-400 dark:text-gray-600">
+                        Drop any tool here
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     return (
         <div className={activeThemeObj.isDark ? 'dark' : ''}>
@@ -240,8 +454,16 @@ export default function Home() {
 
             <main className={`min-h-screen ${activeThemeObj.bgClass} py-10 px-4 flex flex-col justify-between relative transition-colors duration-500`}>
 
-                {/* Top Floating Multi-Theme Palette Selector */}
-                <div className="absolute top-6 right-6 z-30" ref={themeMenuRef}>
+                {/* Top Actions Bar */}
+                <div className="absolute top-6 right-6 z-30 flex items-center gap-2" ref={themeMenuRef}>
+                    <button
+                        onClick={handleResetLayout}
+                        className={`px-3 py-2 rounded-2xl border shadow-sm text-xs font-bold transition active:scale-95 ${activeThemeObj.badgeColor}`}
+                        title="Reset Widget Layout to Default"
+                    >
+                        🔄 <span className="hidden md:inline">Reset Layout</span>
+                    </button>
+
                     <button
                         onClick={() => setIsThemeMenuOpen((prev) => !prev)}
                         className={`px-3.5 py-2 rounded-2xl border shadow-sm flex items-center gap-2 transition active:scale-95 ${activeThemeObj.badgeColor}`}
@@ -252,9 +474,8 @@ export default function Home() {
                         <span className="text-xs">{activeThemeObj.icon}</span>
                     </button>
 
-                    {/* Theme Palette Dropdown Popup */}
                     {isThemeMenuOpen && (
-                        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 flex flex-col gap-1 z-40 max-h-80 overflow-y-auto animate-fadeIn">
+                        <div className="absolute right-0 mt-12 w-56 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 flex flex-col gap-1 z-40 max-h-80 overflow-y-auto animate-fadeIn">
                             <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-2.5 py-1">
                                 Color Palette
                             </p>
@@ -322,96 +543,23 @@ export default function Home() {
                         <p className="text-sm opacity-70">Essential text, document, PDF, due date, calculation, and notepad tools</p>
                     </div>
 
-                    {/* Side-by-Side Main Layout */}
+                    {/* Two-Column Drag-and-Drop Grid Layout */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-                        {/* Always Visible Side Panel: Calculator & Notepad */}
-                        <div className="order-1 lg:order-2 lg:col-span-5 w-full flex flex-col gap-6">
-                            <Calculator />
-                            <Notepad />
+                        {/* Left Column Drop Zone */}
+                        <div className="lg:col-span-6">
+                            {renderColumn('left', columns.left)}
                         </div>
 
-                        {/* Main Document & Due Date Tools Section */}
-                        <div className="order-2 lg:order-1 lg:col-span-7 flex flex-col gap-4">
-                            {/* Tool Navigation Tabs */}
-                            <div className="grid grid-cols-3 sm:grid-cols-6 bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1">
-                                <button
-                                    onClick={() => handleTabChange('cleaner')}
-                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
-                                        activeTab === 'cleaner'
-                                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                                    }`}
-                                >
-                                    Clean Text
-                                </button>
-                                <button
-                                    onClick={() => handleTabChange('converter')}
-                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
-                                        activeTab === 'converter'
-                                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                                    }`}
-                                >
-                                    Convert
-                                </button>
-                                <button
-                                    onClick={() => handleTabChange('merger')}
-                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
-                                        activeTab === 'merger'
-                                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                                    }`}
-                                >
-                                    Merge
-                                </button>
-                                <button
-                                    onClick={() => handleTabChange('splitpdf')}
-                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
-                                        activeTab === 'splitpdf'
-                                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                                    }`}
-                                >
-                                    Split PDF
-                                </button>
-                                <button
-                                    onClick={() => handleTabChange('duedate')}
-                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
-                                        activeTab === 'duedate'
-                                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                                    }`}
-                                >
-                                    Due Date
-                                </button>
-                                <button
-                                    onClick={() => handleTabChange('nrd')}
-                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
-                                        activeTab === 'nrd'
-                                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                                    }`}
-                                >
-                                    NRD Calc
-                                </button>
-                            </div>
-
-                            {/* Active Tool Views */}
-                            {activeTab === 'cleaner' && <LineDeleter />}
-                            {activeTab === 'converter' && <PdfConverter />}
-                            {activeTab === 'merger' && <PdfMerger />}
-                            {activeTab === 'splitpdf' && <PdfSplitter />}
-                            {activeTab === 'duedate' && <DueDateCalculator />}
-                            {activeTab === 'nrd' && <NrdCalculator />}
+                        {/* Right Column Drop Zone */}
+                        <div className="lg:col-span-6">
+                            {renderColumn('right', columns.right)}
                         </div>
-
                     </div>
+
                 </div>
 
-                {/* Footer with Live Active Users & Author Badge */}
+                {/* Footer */}
                 <footer className="mt-12 text-center text-xs font-medium flex flex-wrap items-center justify-center gap-3">
-                    {/* Live Online Users Indicator Badge */}
                     <div
                         title="Number of active users currently using Workspace Kit"
                         className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 px-3.5 py-2 rounded-full border border-gray-200/80 dark:border-slate-800 shadow-sm text-gray-700 dark:text-gray-300 font-bold select-none"
@@ -424,16 +572,13 @@ export default function Home() {
                         <span className="text-[11px] opacity-70 font-semibold">Online Now</span>
                     </div>
 
-                    {/* Author Badge */}
                     <div
                         className="group inline-flex items-center gap-1.5 bg-white dark:bg-slate-900 px-4 py-2 rounded-full border border-gray-200/80 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-violet-300 dark:hover:border-violet-600 transition-all duration-300 cursor-pointer select-none"
                     >
                         <div className="relative flex items-center justify-center w-5 h-5">
-                            {/* Layered Pulsing Aura Rings */}
                             <span className="absolute inset-0 bg-violet-500/40 rounded-full animate-ping"></span>
                             <span className="absolute -inset-1 bg-violet-400/20 rounded-full animate-pulse"></span>
 
-                            {/* Floating & Interactive Animated SVG Icon */}
                             <svg
                                 className="w-4.5 h-4.5 text-violet-600 dark:text-violet-400 relative z-10 animate-bounce transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12"
                                 viewBox="0 0 24 24"
@@ -457,7 +602,6 @@ export default function Home() {
                     </div>
                 </footer>
 
-                {/* Corner Watermark Badge */}
                 <div className="fixed bottom-3 right-4 pointer-events-none opacity-40 hover:opacity-100 transition-opacity hidden sm:block">
                     <span className="text-[10px] font-mono tracking-widest uppercase opacity-60 select-none">
                         Author: tijnara
