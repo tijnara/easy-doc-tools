@@ -48,18 +48,17 @@ export default function LineDeleter() {
         localStorage.setItem('clean_text_input', newValue);
     };
 
-    // Intercept paste: Use direct text/plain to preserve exact original layout, line breaks & remove all star variants
+    // Intercept paste: Strips Outlook PUA icon artifacts ( / \uE000-\uF8FF) and stars while preserving 100% of original layout
     const handlePaste = (e) => {
         e.preventDefault();
 
         // 1. Get raw plain text directly (preserves 100% of original line breaks & spacing)
         const rawText = e.clipboardData.getData('text/plain') || '';
 
-        // 2. Comprehensive star regex: Covers black star (★), white star (☆), star emojis (⭐),
-        // and all Outlook/Word symbol glyph ranges (\u2600-\u26FF & \u2700-\u27BF)
-        let cleanText = rawText.replace(/[★☆⭐🌟✨✪✩✰⭒\u2600-\u26FF\u2700-\u27BF]+/g, '');
+        // 2. Wipe Outlook PUA signature glyphs (\uE000-\uF8FF including ), stars (★), and dingbats
+        let cleanText = rawText.replace(/[\uE000-\uF8FF★☆⭐🌟✨✪✩✰⭒\u2600-\u26FF\u2700-\u27BF]+/g, '');
 
-        // 3. Clean up multiple horizontal spaces left where stars were deleted, preserving line breaks (\n)
+        // 3. Collapse extra horizontal spacing left behind on the same line without destroying line breaks (\n)
         cleanText = cleanText
             .split('\n')
             .map((line) => line.replace(/[ \t]{2,}/g, ' '))
@@ -78,7 +77,7 @@ export default function LineDeleter() {
             target.selectionStart = target.selectionEnd = start + cleanText.length;
         }, 0);
 
-        showToast('Pasted in Original Layout (Stars Removed)!');
+        showToast('Pasted in Original Layout (Logo Glyphs Wiped)!');
     };
 
     const handleUndo = () => {
