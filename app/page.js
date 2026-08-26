@@ -154,7 +154,6 @@ export default function Home() {
     const [currentTheme, setCurrentTheme] = useState('dark');
     const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
-    const [onlineUsers, setOnlineUsers] = useState(1);
 
     const themeMenuRef = useRef(null);
 
@@ -188,25 +187,6 @@ export default function Home() {
         }
 
         setIsMounted(true);
-    }, []);
-
-    // Poll active online users count from heartbeat API
-    useEffect(() => {
-        const fetchOnlineUsers = async () => {
-            try {
-                const res = await fetch('/api/heartbeat');
-                const data = await res.json();
-                if (data && (data.activeUsers !== undefined || data.count !== undefined)) {
-                    setOnlineUsers(data.activeUsers || data.count || 1);
-                }
-            } catch (err) {
-                // Silently retain last known state
-            }
-        };
-
-        fetchOnlineUsers();
-        const interval = setInterval(fetchOnlineUsers, 15000);
-        return () => clearInterval(interval);
     }, []);
 
     // Close theme menu on outside click
@@ -411,19 +391,6 @@ export default function Home() {
 
                 {/* Footer with Live Active Users & Author Badge */}
                 <footer className="mt-12 text-center text-xs font-medium flex flex-wrap items-center justify-center gap-3">
-                    {/* Live Online Users Indicator Badge */}
-                    <div
-                        title="Number of active users currently using Workspace Kit"
-                        className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 px-3.5 py-2 rounded-full border border-gray-200/80 dark:border-slate-800 shadow-sm text-gray-700 dark:text-gray-300 font-bold select-none"
-                    >
-                        <span className="relative flex h-2.5 w-2.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                        </span>
-                        <span className="font-mono text-xs">{onlineUsers}</span>
-                        <span className="text-[11px] opacity-70 font-semibold">Online Now</span>
-                    </div>
-
                     {/* Author Badge */}
                     <div
                         className="group inline-flex items-center gap-1.5 bg-white dark:bg-slate-900 px-4 py-2 rounded-full border border-gray-200/80 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-violet-300 dark:hover:border-violet-600 transition-all duration-300 cursor-pointer select-none"
