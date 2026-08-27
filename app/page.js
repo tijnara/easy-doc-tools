@@ -6,6 +6,7 @@ import PdfConverter from '@/components/PdfConverter';
 import PdfMerger from '@/components/PdfMerger';
 import PdfSplitter from '@/components/PdfSplitter';
 import DueDateCalculator from '@/components/DueDateCalculator';
+import DateConverter from '@/components/DateConverter';
 import NrdCalculator from '@/components/NrdCalculator';
 import Calculator from '@/components/Calculator';
 import Notepad from '@/components/Notepad';
@@ -171,7 +172,6 @@ export default function Home() {
         }
     };
 
-    // Restore splash screen, active tab, and last used theme on mount
     useEffect(() => {
         const savedThemeId = localStorage.getItem('workspace_theme_id') || localStorage.getItem('theme') || 'dark';
         applyTheme(savedThemeId);
@@ -189,7 +189,6 @@ export default function Home() {
         setIsMounted(true);
     }, []);
 
-    // Close theme menu on outside click
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (themeMenuRef.current && !themeMenuRef.current.contains(e.target)) {
@@ -220,7 +219,6 @@ export default function Home() {
 
             <main className={`min-h-screen ${activeThemeObj.bgClass} py-10 px-4 flex flex-col justify-between relative transition-colors duration-500`}>
 
-                {/* Top Floating Multi-Theme Palette Selector */}
                 <div className="absolute top-6 right-6 z-30" ref={themeMenuRef}>
                     <button
                         onClick={() => setIsThemeMenuOpen((prev) => !prev)}
@@ -232,7 +230,6 @@ export default function Home() {
                         <span className="text-xs">{activeThemeObj.icon}</span>
                     </button>
 
-                    {/* Theme Palette Dropdown Popup */}
                     {isThemeMenuOpen && (
                         <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-xl p-1.5 flex flex-col gap-1 z-40 max-h-80 overflow-y-auto animate-fadeIn">
                             <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 px-2.5 py-1">
@@ -311,10 +308,10 @@ export default function Home() {
                             <Notepad />
                         </div>
 
-                        {/* Main Document & Due Date Tools Section */}
+                        {/* Main Tools Section */}
                         <div className="order-2 lg:order-1 lg:col-span-7 flex flex-col gap-4">
-                            {/* Tool Navigation Tabs */}
-                            <div className="grid grid-cols-3 sm:grid-cols-6 bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1">
+                            {/* Navigation Tabs with Date Conv Included */}
+                            <div className="grid grid-cols-4 sm:grid-cols-7 bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1">
                                 <button
                                     onClick={() => handleTabChange('cleaner')}
                                     className={`py-2.5 text-xs font-bold rounded-xl transition ${
@@ -366,6 +363,16 @@ export default function Home() {
                                     Due Date
                                 </button>
                                 <button
+                                    onClick={() => handleTabChange('dateconv')}
+                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                        activeTab === 'dateconv'
+                                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                    }`}
+                                >
+                                    Date Conv
+                                </button>
+                                <button
                                     onClick={() => handleTabChange('nrd')}
                                     className={`py-2.5 text-xs font-bold rounded-xl transition ${
                                         activeTab === 'nrd'
@@ -383,24 +390,22 @@ export default function Home() {
                             {activeTab === 'merger' && <PdfMerger />}
                             {activeTab === 'splitpdf' && <PdfSplitter />}
                             {activeTab === 'duedate' && <DueDateCalculator />}
+                            {activeTab === 'dateconv' && <DateConverter />}
                             {activeTab === 'nrd' && <NrdCalculator />}
                         </div>
 
                     </div>
                 </div>
 
-                {/* Footer with Live Active Users & Author Badge */}
+                {/* Footer */}
                 <footer className="mt-12 text-center text-xs font-medium flex flex-wrap items-center justify-center gap-3">
-                    {/* Author Badge */}
                     <div
                         className="group inline-flex items-center gap-1.5 bg-white dark:bg-slate-900 px-4 py-2 rounded-full border border-gray-200/80 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-violet-300 dark:hover:border-violet-600 transition-all duration-300 cursor-pointer select-none"
                     >
                         <div className="relative flex items-center justify-center w-5 h-5">
-                            {/* Layered Pulsing Aura Rings */}
                             <span className="absolute inset-0 bg-violet-500/40 rounded-full animate-ping"></span>
                             <span className="absolute -inset-1 bg-violet-400/20 rounded-full animate-pulse"></span>
 
-                            {/* Floating & Interactive Animated SVG Icon */}
                             <svg
                                 className="w-4.5 h-4.5 text-violet-600 dark:text-violet-400 relative z-10 animate-bounce transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12"
                                 viewBox="0 0 24 24"
@@ -424,7 +429,6 @@ export default function Home() {
                     </div>
                 </footer>
 
-                {/* Corner Watermark Badge */}
                 <div className="fixed bottom-3 right-4 pointer-events-none opacity-40 hover:opacity-100 transition-opacity hidden sm:block">
                     <span className="text-[10px] font-mono tracking-widest uppercase opacity-60 select-none">
                         Author: tijnara
