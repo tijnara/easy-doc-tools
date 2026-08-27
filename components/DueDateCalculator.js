@@ -164,12 +164,7 @@ export default function DueDateCalculator() {
             result.push({
                 installment: i,
                 dateStr: formatDateToDmy(nextDate),
-                formatted: nextDate.toLocaleDateString('en-GB', {
-                    weekday: 'short',
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                }),
+                formatted: formatDateToDmy(nextDate),
             });
         }
         return result;
@@ -194,7 +189,7 @@ export default function DueDateCalculator() {
     const handleCopySchedule = () => {
         if (!nextPayment) return;
         const selectedFreqLabel = frequencies.find((f) => f.id === frequency)?.label;
-        let text = `Payment Due Summary:\nInitial Due Date: ${formatDisplayHeaderDate(baseDate)}\nFrequency: ${selectedFreqLabel}\nTotal Installments: ${numInstallments}\nNEXT DUE DATE: ${nextPayment.formatted}\nFINAL DUE DATE: ${finalPayment?.formatted || 'N/A'}\n\nFull Payment Lineup:\n`;
+        let text = `Payment Due Summary:\nInitial Due Date: ${baseDate}\nFrequency: ${selectedFreqLabel}\nTotal Installments: ${numInstallments}\nNEXT DUE DATE: ${nextPayment.formatted}\nFINAL DUE DATE: ${finalPayment?.formatted || 'N/A'}\n\nFull Payment Lineup:\n`;
         schedule.forEach((item) => {
             text += `Payment #${item.installment}: ${item.formatted}\n`;
         });
@@ -207,7 +202,7 @@ export default function DueDateCalculator() {
     const parsedCurrentBase = parseDmyOrFlexible(baseDate);
 
     return (
-        <div className="flex flex-col gap-4 p-5 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300 select-none">
+        <div className="flex flex-col gap-4 p-5 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
             <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                     <h2 className="text-xl font-bold text-gray-800 dark:text-white">Due Date Calculator</h2>
@@ -241,7 +236,7 @@ export default function DueDateCalculator() {
                             onFocus={(e) => e.target.select()}
                             onPaste={handlePasteDate}
                             placeholder="DD/MM/YYYY"
-                            className="w-full p-3 pr-10 border rounded-xl text-sm font-semibold text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition select-text"
+                            className="w-full p-3 pr-10 border rounded-xl text-sm font-semibold text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                         />
                         <button
                             type="button"
@@ -347,7 +342,7 @@ export default function DueDateCalculator() {
                     <select
                         value={frequency}
                         onChange={(e) => setFrequency(e.target.value)}
-                        className="p-3 border rounded-xl text-sm font-semibold text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer select-none"
+                        className="p-3 border rounded-xl text-sm font-semibold text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer"
                     >
                         {frequencies.map((freq) => (
                             <option key={freq.id} value={freq.id}>
@@ -370,7 +365,7 @@ export default function DueDateCalculator() {
                         onChange={(e) => setInstallments(e.target.value)}
                         onFocus={(e) => e.target.select()}
                         placeholder="12"
-                        className="p-3 border rounded-xl text-sm font-semibold text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition select-text"
+                        className="p-3 border rounded-xl text-sm font-semibold text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                     />
                 </div>
             </div>
@@ -382,8 +377,8 @@ export default function DueDateCalculator() {
                         <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
                             Next Due Date (#1)
                         </span>
-                        <span className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white font-mono select-text">
-                            {nextPayment.formatted}
+                        <span className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white font-mono">
+                            {formatDisplayHeaderDate(nextPayment.dateStr)}
                         </span>
                     </div>
 
@@ -392,8 +387,8 @@ export default function DueDateCalculator() {
                             <span className="text-gray-500 dark:text-gray-400 font-medium">
                                 Final Payment Due Date (#{numInstallments}):
                             </span>
-                            <strong className="text-gray-800 dark:text-gray-200 font-mono font-bold select-text">
-                                {finalPayment.formatted}
+                            <strong className="text-gray-800 dark:text-gray-200 font-mono font-bold">
+                                {formatDisplayHeaderDate(finalPayment.dateStr)}
                             </strong>
                         </div>
                     )}
@@ -411,7 +406,7 @@ export default function DueDateCalculator() {
                     </span>
                 </div>
 
-                <ul className="space-y-1.5 max-h-64 overflow-y-auto pr-1 select-text">
+                <ul className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
                     {schedule.map((item) => (
                         <li
                             key={item.installment}
