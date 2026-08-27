@@ -156,9 +156,9 @@ export default function DueDateCalculator() {
             let nextDate = new Date(startDate.getTime());
 
             if (freqObj.months > 0) {
-                nextDate.setMonth(nextDate.getMonth() + freqObj.months * i);
+                nextDate.setMonth(nextDate.getMonth() + freqObj.months * (i - 1));
             } else {
-                nextDate.setDate(nextDate.getDate() + freqObj.days * i);
+                nextDate.setDate(nextDate.getDate() + freqObj.days * (i - 1));
             }
 
             result.push({
