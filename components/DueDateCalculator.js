@@ -90,6 +90,12 @@ export default function DueDateCalculator() {
         setTimeout(() => setToastMsg(''), 2500);
     };
 
+    const copyTextToClipboard = (text, label = 'Copied!') => {
+        if (!text) return;
+        navigator.clipboard.writeText(text);
+        showToast(label);
+    };
+
     // Sync calendar month/year view whenever baseDate updates to a valid date
     useEffect(() => {
         if (baseDate) {
@@ -172,24 +178,14 @@ export default function DueDateCalculator() {
 
     const numInstallments = Math.max(1, parseInt(installments, 10) || 1);
     const schedule = calculateSchedule(baseDate, frequency, numInstallments);
-    const nextPayment = schedule[0];
+    const firstPayment = schedule[0];
+    const secondPayment = schedule[1];
     const finalPayment = schedule[schedule.length - 1];
 
-    const formatDisplayHeaderDate = (dateStr) => {
-        const d = parseDmyOrFlexible(dateStr);
-        if (!d) return dateStr;
-        return d.toLocaleDateString('en-GB', {
-            weekday: 'short',
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-        });
-    };
-
     const handleCopySchedule = () => {
-        if (!nextPayment) return;
+        if (!firstPayment) return;
         const selectedFreqLabel = frequencies.find((f) => f.id === frequency)?.label;
-        let text = `Payment Due Summary:\nInitial Due Date: ${baseDate}\nFrequency: ${selectedFreqLabel}\nTotal Installments: ${numInstallments}\nNEXT DUE DATE: ${nextPayment.formatted}\nFINAL DUE DATE: ${finalPayment?.formatted || 'N/A'}\n\nFull Payment Lineup:\n`;
+        let text = `Payment Due Summary:\nInitial Due Date: ${baseDate}\nFrequency: ${selectedFreqLabel}\nTotal Installments: ${numInstallments}\nNEXT DUE DATE: ${secondPayment?.formatted || 'N/A'}\nFINAL DUE DATE: ${finalPayment?.formatted || 'N/A'}\n\nFull Payment Lineup:\n`;
         schedule.forEach((item) => {
             text += `Payment #${item.installment}: ${item.formatted}\n`;
         });
@@ -205,7 +201,9 @@ export default function DueDateCalculator() {
         <div className="flex flex-col gap-4 p-5 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
             <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-white">Due Date Calculator</h2>
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+                        Due Date Calculator
+                    </h2>
                     {toastMsg && (
                         <span className="text-xs font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40 px-2.5 py-1 rounded-full border border-green-200 dark:border-green-900/50">
                             ✓ {toastMsg}
@@ -223,7 +221,7 @@ export default function DueDateCalculator() {
             {/* Inputs Section */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 
-                {/* Initial Due Date Input (DD/MM/YYYY Format) with Manual Editing & Interactive Calendar */}
+                {/* Initial Due Date Input */}
                 <div className="flex flex-col gap-1.5 relative" ref={calendarRef}>
                     <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Initial Due Date (DD/MM/YYYY)
@@ -236,7 +234,7 @@ export default function DueDateCalculator() {
                             onFocus={(e) => e.target.select()}
                             onPaste={handlePasteDate}
                             placeholder="DD/MM/YYYY"
-                            className="w-full p-3 pr-10 border rounded-xl text-sm font-semibold text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                            className="w-full p-3 pr-10 border rounded-xl text-sm font-semibold text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition select-text cursor-text"
                         />
                         <button
                             type="button"
@@ -251,7 +249,6 @@ export default function DueDateCalculator() {
                     {/* Interactive Calendar Popover */}
                     {showCalendar && (
                         <div className="absolute top-full left-0 mt-2 z-50 w-72 p-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-xl animate-fadeIn">
-                            {/* Calendar Header */}
                             <div className="flex items-center justify-between mb-3 px-1">
                                 <button
                                     type="button"
@@ -272,12 +269,10 @@ export default function DueDateCalculator() {
                                 </button>
                             </div>
 
-                            {/* Weekday Labels */}
                             <div className="grid grid-cols-7 text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 mb-1">
                                 <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
                             </div>
 
-                            {/* Calendar Days Grid */}
                             <div className="grid grid-cols-7 gap-1 text-xs">
                                 {Array.from({ length: startDayOfWeek }).map((_, i) => (
                                     <div key={`empty-${i}`} />
@@ -307,7 +302,6 @@ export default function DueDateCalculator() {
                                 })}
                             </div>
 
-                            {/* Quick Select Shortcuts */}
                             <div className="mt-3 pt-2 border-t border-gray-100 dark:border-slate-800 flex justify-between items-center">
                                 <button
                                     type="button"
@@ -365,21 +359,32 @@ export default function DueDateCalculator() {
                         onChange={(e) => setInstallments(e.target.value)}
                         onFocus={(e) => e.target.select()}
                         placeholder="12"
-                        className="p-3 border rounded-xl text-sm font-semibold text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                        className="p-3 border rounded-xl text-sm font-semibold text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-slate-950 border-gray-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition select-text cursor-text"
                     />
                 </div>
             </div>
 
             {/* Summary Highlights */}
-            {nextPayment && (
+            {firstPayment && (
                 <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-950 dark:to-slate-900 border border-blue-100 dark:border-slate-800 rounded-xl flex flex-col gap-3 shadow-2xs">
-                    <div className="flex flex-col items-center justify-center text-center gap-0.5">
+                    <div className="flex flex-col items-center justify-center text-center gap-1">
                         <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                            Next Due Date (#1)
+                            Next Due Date (#2)
                         </span>
-                        <span className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white font-mono">
-                            {formatDisplayHeaderDate(nextPayment.dateStr)}
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white font-mono select-text cursor-text">
+                                {secondPayment?.formatted || 'N/A'}
+                            </span>
+                            {secondPayment?.formatted && (
+                                <button
+                                    onClick={() => copyTextToClipboard(secondPayment.formatted, 'Next date copied!')}
+                                    title="Click to copy Next Due Date"
+                                    className="p-1.5 text-xs bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-slate-700 transition"
+                                >
+                                    📋
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     {numInstallments > 1 && finalPayment && (
@@ -387,9 +392,18 @@ export default function DueDateCalculator() {
                             <span className="text-gray-500 dark:text-gray-400 font-medium">
                                 Final Payment Due Date (#{numInstallments}):
                             </span>
-                            <strong className="text-gray-800 dark:text-gray-200 font-mono font-bold">
-                                {formatDisplayHeaderDate(finalPayment.dateStr)}
-                            </strong>
+                            <div className="flex items-center gap-1.5">
+                                <strong className="text-gray-800 dark:text-gray-200 font-mono font-bold select-text cursor-text">
+                                    {finalPayment.formatted}
+                                </strong>
+                                <button
+                                    onClick={() => copyTextToClipboard(finalPayment.formatted, 'Final date copied!')}
+                                    title="Click to copy Final Due Date"
+                                    className="p-1 text-[10px] bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-300 rounded border border-gray-200 dark:border-slate-700 transition"
+                                >
+                                    📋
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -424,7 +438,7 @@ export default function DueDateCalculator() {
                                 </span>
                                 {item.installment === 1 && (
                                     <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/60 px-1.5 py-0.5 rounded">
-                                        NEXT
+                                        START
                                     </span>
                                 )}
                                 {item.installment === numInstallments && numInstallments > 1 && (
@@ -433,9 +447,18 @@ export default function DueDateCalculator() {
                                     </span>
                                 )}
                             </div>
-                            <span className="font-semibold text-xs text-gray-800 dark:text-gray-200 font-mono">
-                                {item.formatted}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                                <span className="font-semibold text-xs text-gray-800 dark:text-gray-200 font-mono select-text cursor-text">
+                                    {item.formatted}
+                                </span>
+                                <button
+                                    onClick={() => copyTextToClipboard(item.formatted, `Payment #${item.installment} date copied!`)}
+                                    title={`Copy Payment #${item.installment} Date`}
+                                    className="p-1 text-[10px] text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded transition"
+                                >
+                                    📋
+                                </button>
+                            </div>
                         </li>
                     ))}
                 </ul>
