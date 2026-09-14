@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 // Strict expression sanitizer to prevent invalid string characters and consecutive operators
 const sanitizeExpression = (expr) => {
@@ -40,6 +40,15 @@ export default function Calculator() {
 
     const [localHistory, setLocalHistory] = useState([]);
     const [showHistory, setShowHistory] = useState(false);
+
+    const displayRef = useRef(null);
+
+    // Auto-scroll result display when text overflows
+    useEffect(() => {
+        if (displayRef.current) {
+            displayRef.current.scrollLeft = displayRef.current.scrollWidth;
+        }
+    }, [result, input]);
 
     useEffect(() => {
         const saved = localStorage.getItem('calculator_history_local');
@@ -172,7 +181,7 @@ export default function Calculator() {
 
             let resStr = String(evalResult);
             if (typeof evalResult === 'number' && !isNaN(evalResult) && isFinite(evalResult)) {
-                const rounded = Math.round((evalResult + Number.EPSILON) * 100) / 100;
+                const rounded = Math.round((evalResult + Number.EPSILON) * 100000000) / 100000000;
                 resStr = String(rounded);
             }
 
@@ -272,54 +281,62 @@ export default function Calculator() {
     ];
 
     return (
-        <div className="flex flex-col gap-4 p-5 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 max-w-md mx-auto w-full transition-colors duration-300">
-            <div className="flex justify-between items-center">
+        <div className="flex flex-col w-full bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300 overflow-hidden select-none">
+
+            {/* Header & Copy Button */}
+            <div className="flex justify-between items-center px-5 sm:px-6 pt-5 pb-3">
                 <h2 className="text-xl font-bold text-gray-800 dark:text-white" title="Interactive calculator with local history">
                     Basic Calculator
                 </h2>
                 <button
                     onClick={handleCopyResult}
                     title="Copy current result or input value to clipboard (Ctrl+C)"
-                    className="px-3 py-1 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-lg transition"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-lg transition active:scale-95"
                 >
-                    {copied ? '✓ Copied!' : '📋 Copy Result'}
+                    <span>{copied ? '✓' : '📋'}</span>
+                    <span>{copied ? 'Copied!' : 'Copy Result'}</span>
                 </button>
             </div>
 
-            <div className="bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800/80 p-3 rounded-xl flex flex-col gap-1 transition-colors">
-                <input
-                    id="calc-input"
-                    type="text"
-                    value={input}
-                    onChange={handleInputChange}
-                    placeholder="0"
-                    title="Type or edit calculation expression"
-                    className="w-full bg-transparent text-right text-sm font-mono text-gray-500 dark:text-gray-400 focus:outline-none placeholder:text-gray-400"
-                />
-                <div
-                    title={`Calculated result: ${result || '0'}`}
-                    className="text-right text-2xl font-bold font-mono text-gray-800 dark:text-white truncate min-h-[32px]"
-                >
-                    {result !== '' ? result : ''}
+            {/* Enlarged Responsive Display Area */}
+            <div className="px-5 sm:px-6 pb-2">
+                <div className="flex flex-col items-end justify-end h-28 sm:h-36 w-full rounded-2xl bg-gray-50 dark:bg-[#0a0f1c] border border-gray-200 dark:border-slate-800/80 px-4 py-3 shadow-inner overflow-hidden transition-colors">
+                    <input
+                        id="calc-input"
+                        type="text"
+                        value={input}
+                        onChange={handleInputChange}
+                        placeholder="0"
+                        title="Type or edit calculation expression"
+                        className="w-full bg-transparent text-right text-sm sm:text-base h-6 font-semibold tracking-wide text-gray-500 dark:text-gray-400 focus:outline-none placeholder:text-gray-400 mb-1"
+                    />
+                    <div
+                        ref={displayRef}
+                        title={`Calculated result: ${result || '0'}`}
+                        className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight w-full text-right overflow-x-auto whitespace-nowrap scrollbar-hide pb-1"
+                    >
+                        {result !== '' ? result : ''}
+                    </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-2">
+            {/* Enlarged Touch-Friendly Grid Layout */}
+            <div className="grid grid-cols-4 gap-3 sm:gap-4 px-5 sm:px-6 pb-5 sm:pb-6 pt-2">
                 {buttons.map((btn, idx) => (
                     <button
                         key={idx}
                         onClick={btn.onClick}
                         title={btn.title}
-                        className={`py-3 rounded-xl font-semibold text-base transition active:scale-95 ${
-                            btn.span || ''
+                        className={`min-h-[64px] sm:min-h-[72px] md:min-h-[80px] rounded-2xl font-bold text-2xl sm:text-3xl transition active:scale-95 ${
+                            btn.span || 'col-span-1'
                         } ${
                             btn.type === 'action'
-                                ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 border border-transparent dark:border-red-900/40'
+                                ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 text-xl sm:text-2xl'
                                 : btn.type === 'operator'
-                                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-transparent dark:border-blue-900/40'
+                                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-800/40'
                                     : btn.type === 'equals'
-                                        ? 'bg-blue-600 text-white hover:bg-blue-700 font-bold shadow-sm shadow-blue-500/20'
-                                        : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-700'
+                                        ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/20'
+                                        : 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-slate-700 shadow-sm'
                         }`}
                     >
                         {btn.label}
@@ -327,34 +344,35 @@ export default function Calculator() {
                 ))}
             </div>
 
-            <div className="mt-2 pt-3 border-t border-gray-100 dark:border-slate-800">
-                <div className="flex justify-between items-center py-1">
+            {/* History Section */}
+            <div className="mt-2 border-t border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-950/30 px-5 sm:px-6 pb-5 sm:pb-6 pt-4">
+                <div className="flex justify-between items-center mb-3">
                     <button
                         onClick={() => setShowHistory(!showHistory)}
                         title="Toggle recent calculations created on this computer"
-                        className="flex justify-between items-center w-full text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 uppercase tracking-wider transition"
+                        className="flex justify-between items-center w-full text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 uppercase tracking-wider transition cursor-pointer"
                     >
                         <span>Recent Calculations on this PC ({localHistory.length}/10)</span>
-                        <span>{showHistory ? '▲ Hide' : '▼ Show'}</span>
+                        <span>{showHistory ? '▼ HIDE' : '▶ SHOW'}</span>
                     </button>
 
                     {localHistory.length > 0 && showHistory && (
                         <button
                             onClick={clearLocalHistory}
                             title="Clear local calculator history from this computer"
-                            className="text-[10px] text-red-500 hover:text-red-700 font-bold shrink-0 ml-2 transition"
+                            className="text-[10px] text-red-500 hover:text-red-700 font-bold shrink-0 ml-4 transition"
                         >
-                            Clear
+                            CLEAR
                         </button>
                     )}
                 </div>
 
                 {showHistory && (
-                    <div className="mt-2 space-y-2 max-h-48 overflow-y-auto pr-1">
+                    <div className="flex flex-col gap-2 mb-4 max-h-48 overflow-y-auto pr-1 scrollbar-hide">
                         {localHistory.length === 0 ? (
-                            <p className="text-xs text-gray-400 dark:text-gray-500 italic py-2">
+                            <span className="text-xs text-gray-400 dark:text-gray-500 italic py-1">
                                 No calculations saved on this computer.
-                            </p>
+                            </span>
                         ) : (
                             localHistory.map((item) => (
                                 <div
@@ -365,17 +383,17 @@ export default function Calculator() {
                                         setJustCalculated(false);
                                     }}
                                     title={`Click to load result "${item.result}" back into calculator`}
-                                    className="p-2.5 bg-gray-50 dark:bg-slate-800/60 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700/60 cursor-pointer active:scale-98 transition flex justify-between items-center"
+                                    className="p-3 bg-white dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-xl border border-gray-200/60 dark:border-slate-700/80 cursor-pointer active:scale-98 transition flex justify-between items-center shadow-xs"
                                 >
                                     <div className="flex flex-col gap-0.5 truncate pr-2">
-                                        <span className="text-[10px] text-gray-400 font-mono truncate">
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 font-mono truncate">
                                             {item.expression} =
                                         </span>
-                                        <span className="text-xs font-bold font-mono text-gray-800 dark:text-gray-200">
+                                        <span className="text-sm font-bold font-mono text-gray-800 dark:text-gray-200">
                                             {item.result}
                                         </span>
                                     </div>
-                                    <span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0">
+                                    <span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0 font-medium">
                                         {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
@@ -383,16 +401,27 @@ export default function Calculator() {
                         )}
                     </div>
                 )}
-            </div>
 
-            <div className="pt-2 border-t border-gray-100 dark:border-slate-800 text-xs text-gray-500 dark:text-gray-400 flex flex-col gap-1.5">
-                <p className="font-semibold text-gray-700 dark:text-gray-300">⌨️ Keyboard Shortcuts:</p>
-                <ul className="space-y-1 text-[11px] leading-snug text-gray-500 dark:text-gray-400">
-                    <li><span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">Enter</span> or <span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1 py-0.5 rounded border border-gray-200 dark:border-slate-700">=</span> : Computes expression</li>
-                    <li><span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">Ctrl+C</span> : Copies result to clipboard</li>
-                    <li><span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">Backspace</span> : Deletes character</li>
-                    <li><span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">Esc</span> or <span className="font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">C</span> : Clears screen</li>
-                </ul>
+                {/* Keyboard Shortcuts */}
+                <div className="flex flex-col gap-1.5 mt-2">
+                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                        ⌨️ Keyboard Shortcuts:
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-[10px] text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center gap-1.5">
+                            <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700 shadow-xs font-mono font-bold">Enter</kbd> or <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700 shadow-xs font-mono font-bold">=</kbd> <span>: Computes expression</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700 shadow-xs font-mono font-bold">Ctrl+C</kbd> <span>: Copies result to clipboard</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700 shadow-xs font-mono font-bold">Backspace</kbd> <span>: Deletes character</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700 shadow-xs font-mono font-bold">Esc</kbd> or <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-700 shadow-xs font-mono font-bold">C</kbd> <span>: Clears screen</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
