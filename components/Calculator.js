@@ -300,7 +300,7 @@ export default function Calculator() {
 
             {/* Enlarged Responsive Display Area */}
             <div className="px-5 sm:px-6 pb-2">
-                <div className="flex flex-col items-end justify-end h-28 sm:h-36 w-full rounded-2xl bg-gray-50 dark:bg-[#0a0f1c] border border-gray-200 dark:border-slate-800/80 px-4 py-3 shadow-inner overflow-hidden transition-colors">
+                <div className="flex flex-col items-end justify-end min-h-[120px] sm:min-h-[144px] w-full rounded-2xl bg-gray-50 dark:bg-[#0a0f1c] border border-gray-200 dark:border-slate-800/80 px-4 py-3 shadow-inner overflow-hidden transition-colors">
                     <input
                         id="calc-input"
                         type="text"
@@ -308,12 +308,12 @@ export default function Calculator() {
                         onChange={handleInputChange}
                         placeholder="0"
                         title="Type or edit calculation expression"
-                        className="w-full bg-transparent text-right text-sm sm:text-base h-6 font-semibold tracking-wide text-gray-500 dark:text-gray-400 focus:outline-none placeholder:text-gray-400 mb-1"
+                        className="w-full bg-transparent text-right text-xl sm:text-2xl md:text-3xl h-10 sm:h-12 font-medium tracking-wide text-gray-600 dark:text-gray-400 focus:outline-none placeholder:text-gray-400 mb-2"
                     />
                     <div
                         ref={displayRef}
                         title={`Calculated result: ${result || '0'}`}
-                        className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight w-full text-right overflow-x-auto whitespace-nowrap scrollbar-hide pb-1"
+                        className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight w-full text-right overflow-x-auto whitespace-nowrap scrollbar-hide pb-1"
                     >
                         {result !== '' ? result : ''}
                     </div>
