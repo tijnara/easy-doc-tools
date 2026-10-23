@@ -298,9 +298,9 @@ export default function Calculator() {
                 </button>
             </div>
 
-            {/* Enlarged Responsive Display Area */}
+            {/* Enlarged Responsive Display Area (Highlightable & No Vertical Scroll) */}
             <div className="px-5 sm:px-6 pb-2">
-                <div className="flex flex-col items-end justify-end min-h-[120px] sm:min-h-[144px] w-full rounded-2xl bg-gray-50 dark:bg-[#0a0f1c] border border-gray-200 dark:border-slate-800/80 px-4 py-3 shadow-inner overflow-hidden transition-colors">
+                <div className="flex flex-col items-end justify-end min-h-[120px] sm:min-h-[144px] w-full rounded-2xl bg-gray-50 dark:bg-[#0a0f1c] border border-gray-200 dark:border-slate-800/80 px-4 py-3 shadow-inner overflow-hidden transition-colors select-text cursor-text">
                     <input
                         id="calc-input"
                         type="text"
@@ -308,12 +308,12 @@ export default function Calculator() {
                         onChange={handleInputChange}
                         placeholder="0"
                         title="Type or edit calculation expression"
-                        className="w-full bg-transparent text-right text-xl sm:text-2xl md:text-3xl h-10 sm:h-12 font-medium tracking-wide text-gray-600 dark:text-gray-400 focus:outline-none placeholder:text-gray-400 mb-2"
+                        className="w-full bg-transparent text-right text-xl sm:text-2xl md:text-3xl h-10 sm:h-12 font-medium tracking-wide text-gray-600 dark:text-gray-400 focus:outline-none placeholder:text-gray-400 mb-2 select-text cursor-text"
                     />
                     <div
                         ref={displayRef}
                         title={`Calculated result: ${result || '0'}`}
-                        className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight w-full text-right overflow-x-auto whitespace-nowrap scrollbar-hide pb-1"
+                        className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight w-full text-right overflow-x-auto overflow-y-hidden whitespace-nowrap scrollbar-hide pb-1 select-text cursor-text"
                     >
                         {result !== '' ? result : ''}
                     </div>
@@ -383,13 +383,13 @@ export default function Calculator() {
                                         setJustCalculated(false);
                                     }}
                                     title={`Click to load result "${item.result}" back into calculator`}
-                                    className="p-3 bg-white dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-xl border border-gray-200/60 dark:border-slate-700/80 cursor-pointer active:scale-98 transition flex justify-between items-center shadow-xs"
+                                    className="p-3 bg-white dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-xl border border-gray-200/60 dark:border-slate-700/80 cursor-pointer active:scale-98 transition flex justify-between items-center shadow-xs select-text"
                                 >
                                     <div className="flex flex-col gap-0.5 truncate pr-2">
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 font-mono truncate">
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 font-mono truncate select-text">
                                             {item.expression} =
                                         </span>
-                                        <span className="text-sm font-bold font-mono text-gray-800 dark:text-gray-200">
+                                        <span className="text-sm font-bold font-mono text-gray-800 dark:text-gray-200 select-text">
                                             {item.result}
                                         </span>
                                     </div>
