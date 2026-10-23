@@ -8,6 +8,7 @@ import PdfSplitter from '@/components/PdfSplitter';
 import DueDateCalculator from '@/components/DueDateCalculator';
 import DateConverter from '@/components/DateConverter';
 import NrdCalculator from '@/components/NrdCalculator';
+import UppercaseText from '@/components/UppercaseText'; // <-- Imported New Component
 import Calculator from '@/components/Calculator';
 import Notepad from '@/components/Notepad';
 
@@ -310,8 +311,8 @@ export default function Home() {
 
                         {/* Main Tools Section */}
                         <div className="order-2 lg:order-1 lg:col-span-7 flex flex-col gap-4">
-                            {/* Navigation Tabs with Date Conv Included */}
-                            <div className="grid grid-cols-4 sm:grid-cols-7 bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1">
+                            {/* Tabs scaled to 8 columns */}
+                            <div className="grid grid-cols-4 sm:grid-cols-8 bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1">
                                 <button
                                     onClick={() => handleTabChange('cleaner')}
                                     className={`py-2.5 text-xs font-bold rounded-xl transition ${
@@ -382,6 +383,17 @@ export default function Home() {
                                 >
                                     NRD Calc
                                 </button>
+                                {/* New Auto Caps Tab */}
+                                <button
+                                    onClick={() => handleTabChange('autocaps')}
+                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                        activeTab === 'autocaps'
+                                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                    }`}
+                                >
+                                    Auto Caps
+                                </button>
                             </div>
 
                             {/* Active Tool Views */}
@@ -392,6 +404,7 @@ export default function Home() {
                             {activeTab === 'duedate' && <DueDateCalculator />}
                             {activeTab === 'dateconv' && <DateConverter />}
                             {activeTab === 'nrd' && <NrdCalculator />}
+                            {activeTab === 'autocaps' && <UppercaseText />}
                         </div>
 
                     </div>
