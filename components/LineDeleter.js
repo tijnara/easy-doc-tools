@@ -48,17 +48,18 @@ export default function LineDeleter() {
         localStorage.setItem('clean_text_input', newValue);
     };
 
-    // Intercept paste: Derives selection indices directly from DOM target value to replace selected text 100% cleanly
+    // Intercept paste: Derives selection indices directly from DOM target value and collapses multiple spaces/tabs to a single space
     const handlePaste = (e) => {
         e.preventDefault();
 
         const target = e.target;
         const start = target.selectionStart;
         const end = target.selectionEnd;
-        const domValue = target.value; // Read directly from DOM element to avoid selection range mismatch
+        const domValue = target.value;
 
         const rawText = e.clipboardData.getData('text/plain') || '';
-        const cleanText = cleanPastedText(rawText);
+        // Clean artifacts and collapse consecutive spaces/tabs down to a single space
+        let cleanText = cleanPastedText(rawText).replace(/[ \t]{2,}/g, ' ');
 
         const newValue = domValue.substring(0, start) + cleanText + domValue.substring(end);
         handleInputChange(newValue);
@@ -200,7 +201,16 @@ export default function LineDeleter() {
     const handleCleanAndCopy = async () => {
         if (!input.trim()) return;
 
-        const cleanedText = removeExtraSpaces(input, 'blank-lines');
+        // 1. Remove empty blank lines
+        let cleanedText = removeExtraSpaces(input, 'blank-lines');
+
+        // 2. Collapse wide gaps (multiple spaces and tabs) into a single space per line
+        cleanedText = cleanedText
+            .split('\n')
+            .map((line) => line.replace(/[ \t]{2,}/g, ' ').trim())
+            .filter((line) => line.length > 0)
+            .join('\n');
+
         handleInputChange(cleanedText);
 
         navigator.clipboard.writeText(cleanedText);
@@ -285,8 +295,8 @@ export default function LineDeleter() {
                 style={{ width: boxDimensions.width, height: boxDimensions.height }}
             >
                 <textarea
-                    className="w-full h-full p-3 focus:outline-none focus:ring-2 focus:ring-blue-500/40 text-base text-gray-800 dark:text-gray-100 bg-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-none"
-                    placeholder="Paste messy text with extra line spaces here..."
+                    className="w-full h-full p-3 focus:outline-none focus:ring-2 focus:ring-blue-500/40 text-base text-gray-800 dark:text-gray-100 bg-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-none select-text cursor-text"
+                    placeholder="Paste messy text with extra line spaces or wide spacing gaps here..."
                     value={input}
                     onChange={(e) => handleInputChange(e.target.value)}
                     onKeyDown={handleKeyDown}
@@ -307,21 +317,21 @@ export default function LineDeleter() {
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
                 <button
                     onClick={handleCleanAndCopy}
-                    className="sm:col-span-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold active:scale-95 transition shadow-sm shadow-blue-500/20 text-sm"
+                    className="sm:col-span-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold active:scale-95 transition shadow-sm shadow-blue-500/20 text-sm select-none"
                 >
-                    Remove Blank Lines
+                    Remove Blank Lines & Extra Spaces
                 </button>
 
                 <button
                     onClick={handleCopyOnly}
-                    className="sm:col-span-5 py-3.5 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 rounded-xl font-semibold active:scale-95 transition text-sm"
+                    className="sm:col-span-5 py-3.5 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 rounded-xl font-semibold active:scale-95 transition text-sm select-none"
                 >
                     Copy
                 </button>
 
                 <button
                     onClick={handleClear}
-                    className="sm:col-span-2 py-3.5 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-xl font-semibold active:scale-95 transition border border-red-100 dark:border-red-900/40 text-sm"
+                    className="sm:col-span-2 py-3.5 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-xl font-semibold active:scale-95 transition border border-red-100 dark:border-red-900/40 text-sm select-none"
                 >
                     Clear
                 </button>
