@@ -120,6 +120,10 @@ export default function PdfMerger() {
 
     const hasNonPdfFile = files.some((file) => {
         const ext = file.name.split('.').pop().toLowerCase();
+        // Allow images natively in the merger now
+        if (['jpg', 'jpeg', 'png', 'webp', 'bmp'].includes(ext)) {
+            return false;
+        }
         return ext !== 'pdf';
     });
 
@@ -246,7 +250,7 @@ export default function PdfMerger() {
 
     const handlePreviewMerged = async () => {
         if (files.length < 2) {
-            setErrorMessage('Please select at least 2 PDF files to combine.');
+            setErrorMessage('Please select at least 2 files to combine.');
             return;
         }
         if (hasNonPdfFile) {
@@ -264,7 +268,7 @@ export default function PdfMerger() {
             setShowPreviewModal(true);
         } catch (err) {
             console.error(err);
-            setErrorMessage('Error generating preview. Please check if your files are readable.');
+            setErrorMessage(err.message || 'Error combining documents. Please check if your files are readable.');
         } finally {
             setPreviewLoading(false);
         }
@@ -278,7 +282,7 @@ export default function PdfMerger() {
 
     const handleMergeAndDownload = async () => {
         if (files.length < 2) {
-            setErrorMessage('Please select at least 2 PDF files to combine.');
+            setErrorMessage('Please select at least 2 files to combine.');
             return;
         }
         if (hasNonPdfFile) {
@@ -314,7 +318,7 @@ export default function PdfMerger() {
             setOutputFileName('combined-document');
         } catch (err) {
             console.error(err);
-            setErrorMessage('Error combining documents. Please check if your files are readable.');
+            setErrorMessage(err.message || 'Error combining documents. Please check if your files are readable.');
         } finally {
             setLoading(false);
         }
@@ -327,8 +331,9 @@ export default function PdfMerger() {
             </h2>
 
             {errorMessage && (
-                <div className="p-3.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl text-xs text-red-700 dark:text-red-400">
-                    ⚠️ {errorMessage}
+                <div className="p-3.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl text-xs text-red-700 dark:text-red-400 flex items-start gap-2">
+                    <span className="font-bold">⚠️</span>
+                    <span className="leading-relaxed">{errorMessage}</span>
                 </div>
             )}
 
@@ -361,7 +366,7 @@ export default function PdfMerger() {
                         : 'border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800/50'
                 }`}
             >
-                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">Tap or drag PDF, Word, or other files here</span>
+                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">Tap or drag PDF, JPG, or PNG files here</span>
                 <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">PDF files combine locally</span>
                 <input
                     type="file"
@@ -456,9 +461,9 @@ export default function PdfMerger() {
                                             />
                                         ) : (
                                             <div className="flex flex-col items-center justify-center p-3 text-center gap-1">
-                                                <span className="text-3xl">📝</span>
+                                                <span className="text-3xl">🖼️</span>
                                                 <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-900/50">
-                                                    External Format
+                                                    Will Embed
                                                 </span>
                                             </div>
                                         )}
@@ -508,7 +513,7 @@ export default function PdfMerger() {
                             : 'bg-blue-600 hover:bg-blue-700 text-white active:scale-95 shadow-sm shadow-blue-500/20'
                     }`}
                 >
-                    {loading ? 'Combining Files...' : `Merge PDF (${files.length})`}
+                    {loading ? 'Combining Files...' : `Merge Files (${files.length})`}
                 </button>
 
                 <a
