@@ -8,7 +8,8 @@ import PdfSplitter from '@/components/PdfSplitter';
 import DueDateCalculator from '@/components/DueDateCalculator';
 import DateConverter from '@/components/DateConverter';
 import NrdCalculator from '@/components/NrdCalculator';
-import UppercaseText from '@/components/UppercaseText'; // <-- Imported New Component
+import UppercaseText from '@/components/UppercaseText';
+import ImageTextExtractor from '@/components/ImageTextExtractor';
 import Calculator from '@/components/Calculator';
 import Notepad from '@/components/Notepad';
 
@@ -311,11 +312,11 @@ export default function Home() {
 
                         {/* Main Tools Section */}
                         <div className="order-2 lg:order-1 lg:col-span-7 flex flex-col gap-4">
-                            {/* Tabs scaled to 8 columns */}
-                            <div className="grid grid-cols-4 sm:grid-cols-8 bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1">
+                            {/* Navigation Tabs Scaled for 9 Tools */}
+                            <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 bg-gray-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1">
                                 <button
                                     onClick={() => handleTabChange('cleaner')}
-                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                    className={`py-2 text-xs font-bold rounded-xl transition ${
                                         activeTab === 'cleaner'
                                             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
                                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
@@ -325,7 +326,7 @@ export default function Home() {
                                 </button>
                                 <button
                                     onClick={() => handleTabChange('converter')}
-                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                    className={`py-2 text-xs font-bold rounded-xl transition ${
                                         activeTab === 'converter'
                                             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
                                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
@@ -335,7 +336,7 @@ export default function Home() {
                                 </button>
                                 <button
                                     onClick={() => handleTabChange('merger')}
-                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                    className={`py-2 text-xs font-bold rounded-xl transition ${
                                         activeTab === 'merger'
                                             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
                                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
@@ -345,7 +346,7 @@ export default function Home() {
                                 </button>
                                 <button
                                     onClick={() => handleTabChange('splitpdf')}
-                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                    className={`py-2 text-xs font-bold rounded-xl transition ${
                                         activeTab === 'splitpdf'
                                             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
                                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
@@ -355,7 +356,7 @@ export default function Home() {
                                 </button>
                                 <button
                                     onClick={() => handleTabChange('duedate')}
-                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                    className={`py-2 text-xs font-bold rounded-xl transition ${
                                         activeTab === 'duedate'
                                             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
                                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
@@ -365,7 +366,7 @@ export default function Home() {
                                 </button>
                                 <button
                                     onClick={() => handleTabChange('dateconv')}
-                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                    className={`py-2 text-xs font-bold rounded-xl transition ${
                                         activeTab === 'dateconv'
                                             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
                                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
@@ -375,7 +376,7 @@ export default function Home() {
                                 </button>
                                 <button
                                     onClick={() => handleTabChange('nrd')}
-                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                    className={`py-2 text-xs font-bold rounded-xl transition ${
                                         activeTab === 'nrd'
                                             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
                                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
@@ -383,16 +384,25 @@ export default function Home() {
                                 >
                                     NRD Calc
                                 </button>
-                                {/* New Auto Caps Tab */}
                                 <button
                                     onClick={() => handleTabChange('autocaps')}
-                                    className={`py-2.5 text-xs font-bold rounded-xl transition ${
+                                    className={`py-2 text-xs font-bold rounded-xl transition ${
                                         activeTab === 'autocaps'
                                             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
                                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                                     }`}
                                 >
                                     Auto Caps
+                                </button>
+                                <button
+                                    onClick={() => handleTabChange('extractor')}
+                                    className={`py-2 text-xs font-bold rounded-xl transition ${
+                                        activeTab === 'extractor'
+                                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                    }`}
+                                >
+                                    Extract OCR
                                 </button>
                             </div>
 
@@ -405,6 +415,7 @@ export default function Home() {
                             {activeTab === 'dateconv' && <DateConverter />}
                             {activeTab === 'nrd' && <NrdCalculator />}
                             {activeTab === 'autocaps' && <UppercaseText />}
+                            {activeTab === 'extractor' && <ImageTextExtractor />}
                         </div>
 
                     </div>
